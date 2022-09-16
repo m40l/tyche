@@ -1,0 +1,46 @@
+<ng-container *ngIf="user$ | async as user">
+    <ng-container *ngIf="sortedGames$ | async as sortedGames">
+        <div class="row">
+            <div class="col">
+                <div class="card" *ngIf="user.steamUser?.id">
+                    <div class="card-header">
+                        <h3 class="card-title d-flex justify-content-between">
+                            Steam
+                            <button type="button" class="btn btn-outline-primary" (click)="syncFromSteam()">
+                                Sync From Steam
+                            </button>
+                        </h3>
+                    </div>
+                    <ul class="list-group list-group-flush">
+                        <li *ngFor="let game of sortedGames.steam" class="list-group-item">{{game.name}}</li>
+                    </ul>
+                </div>
+            </div>
+            <div class="col">
+                <div class="card">
+                    <div class="card-header">Off Platform Games</div>
+                    <li class="list-group-item disabled text-center">
+                        The only games you can manually add to your account are Steam games. To add a non-Steam game
+                        into your session, have an admin add it to the Session
+                    </li>
+                    <ul class="list-group list-group-flush">
+                        <li class="list-group-item">
+                            <ng-select
+                                [items]="newGamesFiltered$ | async"
+                                bindLabel="name"
+                                bindValue="_id"
+                                [minTermLength]="1"
+                                [loading]="gamesLoading"
+                                typeToSearchText="Search Steam"
+                                [typeahead]="newGameInput$"
+                                [(ngModel)]="newGameSelected"
+                                (ngModelChange)="onChange()"
+                            ></ng-select>
+                        </li>
+                        <li *ngFor="let game of sortedGames.none" class="list-group-item">{{game.name}}</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </ng-container>
+</ng-container>

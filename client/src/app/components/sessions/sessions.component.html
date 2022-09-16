@@ -1,0 +1,74 @@
+<div *ngIf="(user$ | async) as user" class="row">
+    <div class="col">
+        Quick Create Session
+        <form *ngIf="(groups$ | async) as groups" [formGroup]="createSessionForm" (ngSubmit)="newSession()">
+            <div class="btn-group">
+                <input
+                    type="radio"
+                    formControlName="sessionFrom"
+                    name="sessionFrom"
+                    class="btn-check"
+                    id="sessionFromGroup"
+                    value="sessionFromGroup"
+                />
+                <label
+                    for="sessionFromGroup"
+                    [ngClass]="{'btn btn-outline-secondary': true, 'disabled': groups.length == 0}"
+                >
+                    From Group
+                </label>
+                <input
+                    type="radio"
+                    formControlName="sessionFrom"
+                    name="sessionFrom"
+                    class="btn-check"
+                    id="sessionFromFriends"
+                    value="sessionFromFriends"
+                />
+                <label for="sessionFromFriends" class="btn btn-outline-secondary">From Friends</label>
+            </div>
+            <ng-template [ngIf]="createSessionForm.value.sessionFrom == 'sessionFromGroup'">
+                <ng-select formControlName="group" [items]="groups" bindLabel="name" bindValue="_id"></ng-select>
+            </ng-template>
+            <ng-template [ngIf]="createSessionForm.value.sessionFrom == 'sessionFromFriends'">
+                <ng-select
+                    *ngIf="(friends$ | async) as friends"
+                    formControlName="newSessionUsers"
+                    [items]="friends"
+                    bindLabel="username"
+                    bindValue="_id"
+                    [multiple]="true"
+                    [closeOnSelect]="false"
+                    [hideSelected]="true"
+                    placeholder="Enter friend code or Select a friend"
+                >
+                </ng-select>
+            </ng-template>
+            <button type="submit" class="btn btn-success">New Session</button>
+        </form>
+    </div>
+    <div class="col">
+        <ul *ngIf="(sessions$ | async) as sessions" class="list-group">
+            <li class="list-group-item text-center text-primary">Existing sessions</li>
+            <a
+                *ngFor="let session of sessions"
+                class="list-group-item list-group-item-action"
+                [routerLink]="['/session/',session._id]"
+            >
+                <span class="fw-bold">Admins</span>
+                <hr class="my-0" />
+                <span class="fs-6" *ngFor="let admin of session.admins; last as isLast">
+                    <span [ngClass]="{'text-muted': admin._id === user._id}">{{admin.username}}</span>
+                    <span *ngIf="!isLast">,</span>
+                </span>
+                <br />
+                <span class="fw-bold">Users</span>
+                <hr class="my-0" />
+                <span class="fs-6" *ngFor="let sessionUser of session.users; last as isLast">
+                    <span [ngClass]="{'text-muted': sessionUser._id === user._id}">{{sessionUser.username}}</span>
+                    <span *ngIf="!isLast">, </span>
+                </span>
+            </a>
+        </ul>
+    </div>
+</div>

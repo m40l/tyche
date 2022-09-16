@@ -1,0 +1,54 @@
+<nav class="navbar navbar-expand-lg">
+    <div class="container-fluid">
+        <a class="navbar-brand" routerLink="/">Tyche</a>
+        <button
+            class="navbar-toggler"
+            type="button"
+            data-bs-toggle="collapse"
+            data-bs-target="#navbarContent"
+            aria-controls="navbarContent"
+            aria-expanded="false"
+            aria-label="Toggle navigation"
+        >
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarContent">
+            <ul class="navbar-nav w-100">
+                <li class="nav-item"><a class="nav-link" routerLink="/sessions">Sessions</a></li>
+                <li class="nav-item"><a class="nav-link" routerLink="/groups">Groups</a></li>
+                <li class="nav-item me-auto"><a class="nav-link" routerLink="/games">My Games</a></li>
+                <ng-container *ngIf="(user$ | async) as user; else loginButton">
+                    <li class="nav-item">
+                        <a *ngIf="user.steamUser; else connectSteamButton" class="nav-link disabled">
+                            Steam Connected: {{user.steamUser.displayName}}
+                        </a>
+                        <ng-template #connectSteamButton>
+                            <a class="btn btn-outline-primary btn-sm" href="/auth/steam"> Connect your Steam </a>
+                        </ng-template>
+                    </li>
+                    <li class="nav-item dropdown">
+                        <a
+                            href="#"
+                            class="nav-link dropdown-toggle"
+                            role="button"
+                            data-bs-toggle="dropdown"
+                            aria-expanded="false"
+                        >
+                            {{user.username}}
+                        </a>
+                        <ul class="dropdown-menu">
+                            <li><a href="/auth/logout" class="dropdown-item">Logout</a></li>
+                        </ul>
+                    </li>
+                </ng-container>
+                <ng-template #loginButton>
+                    <li class="nav-item dropdown">
+                        <form class="form-inline">
+                            <button class="btn btn-primary" routerLink="/login">Login</button>
+                        </form>
+                    </li>
+                </ng-template>
+            </ul>
+        </div>
+    </div>
+</nav>

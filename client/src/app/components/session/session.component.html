@@ -1,0 +1,100 @@
+<ng-container *ngIf="(session$ | async) as session">
+    <div class="row">
+        <div class="col">
+            <div class="mh-50">
+                <h3 class="d-flex justify-content-between">
+                    Admins
+                    <div>
+                        <button class="btn btn-outline-primary mx-2" (click)="refreshSession()">Refresh Session</button>
+                        <button class="btn btn-outline-primary" (click)="syncGames()">Sync Common Games</button>
+                    </div>
+                </h3>
+                <div class="list-group">
+                    <li *ngFor="let admin of session.admins" class="list-group-item">{{admin.username}}</li>
+                </div>
+            </div>
+            <div class="mh-50">
+                <h3>Users</h3>
+                <div class="list-group">
+                    <li *ngFor="let user of session.users" class="list-group-item">{{user.username}}</li>
+                </div>
+            </div>
+        </div>
+        <div class="col">
+            <h3 class="d-flex justify-content-between">Games</h3>
+            <form>
+                <div class="input-group mb-2">
+                    <input
+                        type="text"
+                        [formControl]="customGameName"
+                        placeholder="Name"
+                        name="customGame"
+                        id="customGame"
+                        class="form-control"
+                    />
+                    <button
+                        class="btn btn-success"
+                        [ngClass]="{disabled : customGameName.invalid}"
+                        (click)="addCustomGame()"
+                    >
+                        Add Custom Game
+                    </button>
+                </div>
+            </form>
+            <div class="list-group">
+                <li
+                    class="list-group-item d-flex justify-content-between align-items-center"
+                    *ngFor="let game of session.customGames"
+                >
+                    {{game.name}}
+                    <button class="btn btn-outline-danger btn-sm" (click)="deleteGame(game)">Remove</button>
+                </li>
+                <ng-container *ngIf="allowedCommonGames$ | async as allowedCommonGames">
+                    <li
+                        *ngFor="let game of allowedCommonGames"
+                        class="list-group-item d-flex justify-content-between align-items-center"
+                    >
+                        {{game.name}} <button class="btn btn-outline-danger btn-sm" (click)="banGame(game)">Ban</button>
+                    </li>
+                </ng-container>
+            </div>
+        </div>
+        <div class="col">
+            <h3>Bans</h3>
+            <div class="list-group">
+                <li class="list-group-item text-center text-muted" *ngIf="session.bannedGames.length == 0">
+                    No banned games. Your group is chill with anything :)
+                </li>
+                <li
+                    *ngFor="let game of session.bannedGames"
+                    class="list-group-item d-flex justify-content-between align-items-center"
+                >
+                    {{game.name}}<button class="btn btn-outline-danger btn-sm" (click)="unbanGame(game)">Unban</button>
+                </li>
+            </div>
+        </div>
+    </div>
+    <div class="modal fade" id="chooseGameNotification">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Your Next Game!</h5>
+                </div>
+                <div class="modal-body">
+                    <ng-container *ngIf="choseGameEvent | async as choseGameEvent">
+                        {{choseGameEvent.data.name}}
+                    </ng-container>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#chooseGameNotification">
+        Launch static backdrop modal
+    </button>
+    <div class="fixed-bottom p-4">
+        <button class="btn btn-success w-100 p-3" (click)="chooseGame()">Choose Game!</button>
+    </div>
+</ng-container>

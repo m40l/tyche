@@ -1,0 +1,92 @@
+<div class="row">
+    <div class="col">
+        <ul *ngIf="(groups$ | async) as groups" class="list-group">
+            <li class="list-group-item">
+                <div class="input-group">
+                    <input
+                        [(ngModel)]="newGroupName"
+                        type="text"
+                        name="groupName"
+                        id="groupName"
+                        class="form-control"
+                        placeholder="New Group"
+                    />
+                    <span class="input-group-btn">
+                        <button class="btn btn-success" type="submit" (click)="newGroup()">+</button>
+                    </span>
+                </div>
+            </li>
+            <ng-template [ngIf]="groups.length > 0" [ngIfElse]="noGroups">
+                <li *ngFor="let group of groups;">
+                    <div class="input-group">
+                        <span class="input-group-text">{{group.name}}</span>
+                        <span class="input-group-btn">
+                            <button class="btn btn-danger" type="submit" (click)="leaveGroup(group._id)">-</button>
+                        </span>
+                    </div>
+                </li>
+            </ng-template>
+            <ng-template #noGroups>
+                <li class="list-group-item disabled text-center">No Groups... try making one!</li>
+            </ng-template>
+        </ul>
+    </div>
+    <div class="col">
+        <ul *ngIf="selectedGroup; else noSelectedGroup" class="list-group">
+            <li class="list-group-item">
+                <input
+                    [(ngModel)]="memberSearch"
+                    type="text"
+                    name="memberSearch"
+                    id="memberSearch"
+                    class="form-control"
+                    placeholder="Search"
+                />
+            </li>
+            <li *ngFor="let member of selectedGroup.users;">
+                <div class="input-group">
+                    <span class="input-group-text">{{member.username}}</span>
+                    <span class="input-group-btn">
+                        <button class="btn btn-danger" type="submit" (click)="removeMember(member._id)">-</button>
+                    </span>
+                </div>
+            </li>
+        </ul>
+        <ng-template #noSelectedGroup>
+            <ul class="list-group">
+                <li class="list-group-item disabled text-center">No Selected Group</li>
+            </ul>
+        </ng-template>
+    </div>
+    <div class="col">
+        <ul *ngIf="(friends$ | async) as friends" class="list-group">
+            <li class="list-group-item">
+                <div class="input-group">
+                    <input
+                        [(ngModel)]="newFriendSearch"
+                        type="text"
+                        name="newFriendSearch"
+                        id="newFriendSearch"
+                        class="form-control"
+                        placeholder="Friend Code or Email"
+                    />
+                    <span class="input-group-btn">
+                        <button class="btn btn-success" type="submit" (click)="newFriend()">+</button>
+                    </span>
+                </div>
+            </li>
+            <li *ngIf="(user$ | async) as user" class="list-group-item active text-center">
+                Your Friend Code:
+                <span class="user-select-all">{{user.friendCode}}</span>
+            </li>
+            <li
+                *ngFor="let friend of friends"
+                class="list-group-item d-flex justify-content-between align-items-center"
+            >
+                {{friend.username}}
+                <button class="btn btn-outline-danger btn-sm" (click)="removeFriend(friend._id)">Unfriend</button>
+            </li>
+            <li *ngIf="friends.length == 0" class="list-group-item disabled text-center">No Friends :')</li>
+        </ul>
+    </div>
+</div>

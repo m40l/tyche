@@ -1,4 +1,3 @@
-import { omit } from 'lodash';
 import { SessionGame } from './models';
 
 export interface Event {

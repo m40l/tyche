@@ -57,7 +57,7 @@ googleAuthRouter.get('/', passport.authenticate('google'));
 googleAuthRouter.get(
     '/callback',
     passport.authenticate('google', {
-        successReturnToOrRedirect: `/`,
+        successReturnToOrRedirect: `/games`,
         failureRedirect: `/login`,
     })
 );
@@ -67,7 +67,7 @@ steamAuthRouter.get(
     '/callback',
     isAuthenticated,
     passport.authenticate('steam', {
-        successReturnToOrRedirect: `/`,
+        successReturnToOrRedirect: `/games`,
         failureRedirect: `/login`,
     })
 );

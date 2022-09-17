@@ -6,8 +6,9 @@ import Session from '../models/Session';
 const eventsRouter = express.Router();
 
 eventsRouter.use((_req, res, next) => {
-    res.setHeader('Cache-Control', 'no-cache');
     res.setHeader('Content-Type', 'text/event-stream');
+    res.setHeader('Cache-Control', 'no-cache');
+    res.setHeader('X-Accel-Buffering', 'no');
     res.setHeader('Connection', 'keep-alive');
     res.flushHeaders(); // flush the headers to establish SSE with client
 

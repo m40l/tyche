@@ -1,6 +1,6 @@
 <ng-container *ngIf="user$ | async as user">
     <ng-container *ngIf="sortedGames$ | async as sortedGames">
-        <div class="row">
+        <div class="row overflow-scroll pb-3">
             <div class="col">
                 <div class="card" *ngIf="user.steamUser?.id">
                     <div class="card-header">

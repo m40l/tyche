@@ -44,57 +44,9 @@ gameRouter.post('/sync/steam', async (req, res) => {
     if (user.steamUser?.id === undefined) {
         return res.status(401).send();
     }
-
-    let steam = new SteamClient();
-    steam
-        .getOwnedGames({
-            steamid: user.steamUser.id,
-            include_appinfo: true,
-            include_played_free_games: true,
-        })
-        .then(async (steamGames) => {
-            await Game.bulkWrite(
-                steamGames.response.games.map((game) => ({
-                    updateOne: {
-                        filter: { appId: game.appid },
-                        update: {
-                            $set: {
-                                name: game.name,
-                                iconUrl: game.img_icon_url,
-                                logoUrl: game.img_logo_url,
-                            },
-                            $setOnInsert: {
-                                appId: game.appid,
-                            },
-                        },
-                        upsert: true,
-                    },
-                }))
-            );
-            const ownedGamesModels = await Game.find(
-                {
-                    appId: { $in: steamGames.response.games.map((game) => game.appid) },
-                },
-                '_id'
-            );
-
-            let existingOwnedGames: IOwnedGame[] = [...user.games];
-
-            user.games = existingOwnedGames
-                .filter((game) => game.platform !== Platform.Steam)
-                .concat(
-                    ownedGamesModels.map((gameModel) => ({
-                        game: gameModel._id,
-                        platform: Platform.Steam,
-                    }))
-                );
-            await user.save();
-
-            return res.status(200).send();
-        })
-        .catch(() => {
-            return res.status(500).send();
-        });
+    await user.syncSteamGames();
+    await user.save();
+    return res.status(200).send();
 });
 
 gameRouter.get('/search', async (req, res) => {

@@ -35,12 +35,9 @@ export const generateGoogleStrategy = (strategy: GoogleStrategyOptions) =>
 export const generateSteamStrategy = (strategyOptions: { returnURL: string; realm: string; apiKey: string }) =>
     new SteamStrategy(
         { ...strategyOptions, passReqToCallback: true },
-        (req: Request, _id: string, profile: any, cb: any) => {
+        async (req: Request, _id: string, profile: any, cb: any) => {
             let user = req.user as HydratedDocument<IUser>;
-            user.steamUser = {
-                id: profile.id,
-                displayName: profile.displayName,
-            };
+            await user.setSteamUser(profile);
             user.save(cb);
         }
     );

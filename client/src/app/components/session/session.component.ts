@@ -14,13 +14,15 @@ import {
     tap,
 } from 'rxjs';
 import { ChooseGameEvent } from '../../../../../types/events';
-import { CustomGame, Game, Session } from '../../../../../types/models';
+import { CustomGame, Game, Session, User } from '../../../../../types/models';
 import {
     AddCustomGameRequest,
+    AddSessionUserRequest,
     BanGameRequest,
     DeleteGameRequest,
     UnbanGameRequest,
 } from '../../../../../types/requests';
+import FriendsService from '../../services/friends.service';
 import SessionService from '../../services/session.service';
 
 @Component({
@@ -44,9 +46,17 @@ export class SessionComponent implements OnDestroy {
     private banGameRequests = new Subject<Game>();
     private unbanGameRequests = new Subject<Game>();
     private addCustomGameRequests = new Subject<CustomGame>();
+    private addSessionUserRequests = new Subject<string>();
     public choseGameEvent = new Subject<ChooseGameEvent>();
 
-    constructor(private route: ActivatedRoute, private sessionService: SessionService) {
+    public addableFriends$: Observable<User[]>;
+    public newSessionUser = new FormControl('', { nonNullable: true });
+
+    constructor(
+        private route: ActivatedRoute,
+        private sessionService: SessionService,
+        private friendsService: FriendsService
+    ) {
         let sessionIdObservable = this.route.params.pipe(map((params): string => params['id']));
         this.session$ = sessionIdObservable.pipe(
             concatMap((id) =>
@@ -60,6 +70,21 @@ export class SessionComponent implements OnDestroy {
         );
         this.allowedCommonGames$ = this.session$.pipe(
             map((session) => this.calculateAllowedGommonGames(session.commonGames, session.bannedGames))
+        );
+
+        this.addableFriends$ = this.session$.pipe(
+            mergeMap((session) =>
+                this.friendsService
+                    .friendsObservable()
+                    .pipe(
+                        map((friends) =>
+                            friends.filter(
+                                (friend) =>
+                                    session.users.find((existingUser) => friend._id === existingUser._id) === undefined
+                            )
+                        )
+                    )
+            )
         );
 
         this.subscriptions = [
@@ -125,6 +150,18 @@ export class SessionComponent implements OnDestroy {
                     )
                 )
                 .subscribe((addCustomGameRequest) => this._addCustomGame(addCustomGameRequest)),
+            this.addSessionUserRequests
+                .pipe(
+                    mergeMap((userId) =>
+                        sessionIdObservable.pipe(
+                            map((sessionId) => ({
+                                sessionId,
+                                userId,
+                            }))
+                        )
+                    )
+                )
+                .subscribe((addSessionUserRequest) => this._addSessionUser(addSessionUserRequest)),
         ];
     }
 
@@ -195,5 +232,14 @@ export class SessionComponent implements OnDestroy {
 
     private _addCustomGame(addCustomGameRequest: AddCustomGameRequest) {
         this.sessionService.addCustomGame(addCustomGameRequest).subscribe(() => this.refreshSession());
+    }
+
+    addSessionUser() {
+        this.addSessionUserRequests.next(this.newSessionUser.value);
+        this.newSessionUser.reset();
+    }
+
+    private _addSessionUser(addSessionUserRequest: AddSessionUserRequest) {
+        this.sessionService.addSessionUser(addSessionUserRequest).subscribe(() => this.refreshSession());
     }
 }

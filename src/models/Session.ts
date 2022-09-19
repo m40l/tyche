@@ -1,7 +1,7 @@
 import _ from 'lodash';
 import { HydratedDocument, model, PopulateOptions, Schema, Types } from 'mongoose';
 import { ChooseGameEvent } from '../../types/events';
-import { CustomGame, SessionGame } from '../../types/models';
+import { CustomGame, SessionGame, User } from '../../types/models';
 import eventBus from '../events';
 import { IGame } from './Game';
 
@@ -19,6 +19,7 @@ export interface ISession {
     unbanGame(gameId: string): void;
     addCustomGame(game: CustomGame): void;
     deleteCustomGame(game: CustomGame): void;
+    addUser(userId: string): void;
 }
 
 export default model<ISession>(
@@ -119,6 +120,10 @@ export default model<ISession>(
                 },
                 deleteCustomGame(game: CustomGame) {
                     this.customGames = _.reject(this.customGames, (a) => a.name == game.name);
+                },
+                addUser(userId: string) {
+                    const user = new Types.ObjectId(userId);
+                    this.users = _.unionWith(this.users, [user], (a, b) => a.equals(b));
                 },
             },
             toJSON: { virtuals: true },

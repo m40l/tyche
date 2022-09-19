@@ -1,6 +1,6 @@
 import * as express from 'express';
 import { HydratedDocument } from 'mongoose';
-import { IUser } from '../models/User';
+import User, { IUser } from '../models/User';
 import Session, { ISession } from '../models/Session';
 import assert from 'assert';
 import Group from '../models/Group';
@@ -9,6 +9,7 @@ import { Types } from 'mongoose';
 import { IGame } from '../models/Game';
 import {
     AddCustomGameRequest,
+    AddSessionUserRequest,
     BanGameRequest,
     CreateSessionForm,
     DeleteGameRequest,
@@ -165,6 +166,23 @@ sessionRouter.post('/:id/games/', async (req, res) => {
     }
 
     session.addCustomGame(addCustomGameRequest.customGame);
+    await session.save();
+    return res.status(200).send();
+});
+
+sessionRouter.post('/:id/users/:userId', async (req, res) => {
+    const user = req.user as HydratedDocument<IUser>;
+    const session = await Session.findById(req.params.id);
+    if (!session) {
+        return res.status(404).send();
+    }
+    const newUser = await User.findById(req.params.userId);
+    if (!newUser) {
+        return res.status(404).send();
+    }
+    const addSessionUserRequest = req.body as AddSessionUserRequest;
+
+    session.addUser(addSessionUserRequest.userId);
     await session.save();
     return res.status(200).send();
 });

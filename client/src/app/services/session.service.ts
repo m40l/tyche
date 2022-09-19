@@ -3,6 +3,7 @@ import { HttpClient } from '@angular/common/http';
 import { fromEvent, map, Observable } from 'rxjs';
 import {
     AddCustomGameRequest,
+    AddSessionUserRequest,
     BanGameRequest,
     CreateSessionForm,
     DeleteGameRequest,
@@ -56,5 +57,9 @@ export default class SessionService {
 
     addCustomGame(request: AddCustomGameRequest) {
         return this.httpClient.post(`/api/sessions/${request.sessionId}/games`, request);
+    }
+
+    addSessionUser(request: AddSessionUserRequest) {
+        return this.httpClient.post(`/api/sessions/${request.sessionId}/users/${request.userId}`, request);
     }
 }

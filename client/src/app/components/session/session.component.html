@@ -17,6 +17,22 @@
                 <h3>Users</h3>
                 <div class="list-group">
                     <li *ngFor="let user of session.users" class="list-group-item">{{user.username}}</li>
+                    <ng-container *ngIf="(addableFriends$ | async) as addableFriends">
+                        <li *ngIf="addableFriends.length > 0; else noAddableFriends" class="list-group-item">
+                            <ng-select
+                                [formControl]="newSessionUser"
+                                [items]="addableFriends"
+                                bindLabel="username"
+                                bindValue="_id"
+                                placeholder="Enter friend code or Select a friend"
+                                (change)="addSessionUser()"
+                            >
+                            </ng-select>
+                        </li>
+                        <ng-template #noAddableFriends>
+                            <li class="list-group-item text-center text-muted">All your friends are here ;)</li>
+                        </ng-template>
+                    </ng-container>
                 </div>
             </div>
         </div>

@@ -22,3 +22,8 @@ export interface AddCustomGameRequest {
     sessionId: string;
     customGame: CustomGame;
 }
+
+export interface AddSessionUserRequest {
+    sessionId: string;
+    userId: string;
+}

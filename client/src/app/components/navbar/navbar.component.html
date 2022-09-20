@@ -16,7 +16,8 @@
             <ul class="navbar-nav w-100">
                 <li class="nav-item"><a class="nav-link" routerLink="/games">My Games</a></li>
                 <li class="nav-item"><a class="nav-link" routerLink="/groups">Friends</a></li>
-                <li class="nav-item me-auto"><a class="nav-link" routerLink="/sessions">Sessions</a></li>
+                <li class="nav-item"><a class="nav-link" routerLink="/sessions">Sessions</a></li>
+                <li class="nav-item me-auto"><a class="nav-link" routerLink="/about">About</a></li>
                 <ng-container *ngIf="(user$ | async) as user; else loginButton">
                     <li class="nav-item">
                         <a *ngIf="user.steamUser; else connectSteamButton" class="nav-link disabled">

@@ -1,4 +1,4 @@
-import { SessionGame } from './models';
+import { Session, SessionGame } from './models';
 
 export interface Event {
     event: string;
@@ -16,4 +16,10 @@ export class ChooseGameEvent implements SessionEvent {
     event = 'ChooseGameEvent';
     model = 'Session';
     constructor(public id: string, public data: SessionGame) {}
+}
+
+export class UpdateSessionEvent implements SessionEvent {
+    event = 'UpdateSessionEvent';
+    model = 'Session';
+    constructor(public id: string, public data: Session) {}
 }

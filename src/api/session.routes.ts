@@ -1,12 +1,11 @@
 import * as express from 'express';
-import { HydratedDocument } from 'mongoose';
-import User, { IUser } from '../models/User';
+import { HydratedDocument, MergeType } from 'mongoose';
+import User, { IOwnedGame, IUser } from '../models/User';
 import Session, { ISession } from '../models/Session';
 import assert from 'assert';
 import Group from '../models/Group';
 import _ from 'lodash';
-import { Types } from 'mongoose';
-import { IGame } from '../models/Game';
+import Game, { IGame } from '../models/Game';
 import {
     AddCustomGameRequest,
     AddSessionUserRequest,
@@ -15,6 +14,8 @@ import {
     DeleteGameRequest,
     UnbanGameRequest,
 } from '../../types/requests';
+import eventBus from '../events';
+import { ChooseGameEvent, UpdateSessionEvent } from '../../types/events';
 
 const sessionRouter = express.Router();
 sessionRouter.use(express.json());
@@ -103,24 +104,72 @@ sessionRouter.post('/', async (req, res) => {
 
 sessionRouter.post('/:id/sync/games', async (req, res) => {
     const user = req.user as HydratedDocument<IUser>;
-    const session = await Session.findById(req.params.id).populate<{ users: IUser[] }>({
-        path: 'users',
-        select: '_id games.game',
-    });
+    const session = await Session.findById(req.params.id).populate<{
+        users: HydratedDocument<
+            MergeType<IUser, { games: MergeType<IOwnedGame, { game: HydratedDocument<IGame> }>[] }>
+        >[];
+        admins: HydratedDocument<IUser>[];
+        commonGames: HydratedDocument<IGame>[];
+        bannedGames: HydratedDocument<IGame>[];
+    }>([
+        {
+            path: 'users',
+            select: '_id username games.game',
+            populate: {
+                path: 'games.game',
+                select: '_id name',
+            },
+        },
+        {
+            path: 'admins',
+            select: '_id username',
+        },
+        {
+            path: 'commonGames',
+            select: '_id name',
+        },
+        {
+            path: 'bannedGames',
+            select: '_id name',
+        },
+    ]);
     if (!session) {
         return res.status(404).send();
     }
 
     const usersGames = session.users.map((user) => _.map(user.games, 'game'));
-    session.commonGames = _.intersectionWith(...usersGames, (a: Types.ObjectId, b: Types.ObjectId) => a.equals(b));
+    session.commonGames = _.intersectionWith(...usersGames, (a: IGame, b: IGame) => a._id.equals(b._id));
     await session.save();
+    eventBus.next(new UpdateSessionEvent(session.id, session.toObject()));
 
     return res.status(200).send();
 });
 
 sessionRouter.delete('/:id/games', async (req, res) => {
     const user = req.user as HydratedDocument<IUser>;
-    const session = await Session.findById(req.params.id);
+    const session = await Session.findById(req.params.id).populate<{
+        users: HydratedDocument<IUser>[];
+        admins: HydratedDocument<IUser>[];
+        commonGames: HydratedDocument<IGame>[];
+        bannedGames: HydratedDocument<IGame>[];
+    }>([
+        {
+            path: 'users',
+            select: '_id username',
+        },
+        {
+            path: 'admins',
+            select: '_id username',
+        },
+        {
+            path: 'commonGames',
+            select: '_id name',
+        },
+        {
+            path: 'bannedGames',
+            select: '_id name',
+        },
+    ]);
     const deleteGameRequest = req.body as DeleteGameRequest;
     if (!session) {
         return res.status(404).send();
@@ -128,38 +177,117 @@ sessionRouter.delete('/:id/games', async (req, res) => {
 
     session.deleteCustomGame(deleteGameRequest.customGame);
     await session.save();
+    eventBus.next(new UpdateSessionEvent(session.id, session.toObject()));
     return res.status(200).send();
 });
 
 sessionRouter.delete('/:id/games/:gameid', async (req, res) => {
     const user = req.user as HydratedDocument<IUser>;
-    const session = await Session.findById(req.params.id);
+    const session = await Session.findById(req.params.id).populate<{
+        users: HydratedDocument<IUser>[];
+        admins: HydratedDocument<IUser>[];
+        commonGames: HydratedDocument<IGame>[];
+        bannedGames: HydratedDocument<IGame>[];
+    }>([
+        {
+            path: 'users',
+            select: '_id username',
+        },
+        {
+            path: 'admins',
+            select: '_id username',
+        },
+        {
+            path: 'commonGames',
+            select: '_id name',
+        },
+        {
+            path: 'bannedGames',
+            select: '_id name',
+        },
+    ]);
     const banGameRequest = req.body as BanGameRequest;
     if (!session) {
         return res.status(404).send();
     }
 
-    session.banGame(banGameRequest.game._id);
+    const bannedGame = await Game.findById(banGameRequest.game._id);
+    if (!bannedGame) {
+        return res.status(404).send();
+    }
+
+    session.banGame(bannedGame);
     await session.save();
+    eventBus.next(new UpdateSessionEvent(session.id, session.toObject()));
     return res.status(200).send();
 });
 
 sessionRouter.post('/:id/games/:gameid', async (req, res) => {
     const user = req.user as HydratedDocument<IUser>;
-    const session = await Session.findById(req.params.id);
+    const session = await Session.findById(req.params.id).populate<{
+        users: HydratedDocument<IUser>[];
+        admins: HydratedDocument<IUser>[];
+        commonGames: HydratedDocument<IGame>[];
+        bannedGames: HydratedDocument<IGame>[];
+    }>([
+        {
+            path: 'users',
+            select: '_id username',
+        },
+        {
+            path: 'admins',
+            select: '_id username',
+        },
+        {
+            path: 'commonGames',
+            select: '_id name',
+        },
+        {
+            path: 'bannedGames',
+            select: '_id name',
+        },
+    ]);
     const unbanGameRequest = req.body as UnbanGameRequest;
     if (!session) {
         return res.status(404).send();
     }
 
-    session.unbanGame(unbanGameRequest.game._id);
+    const unbannedGame = await Game.findById(unbanGameRequest.game._id);
+    if (!unbannedGame) {
+        return res.status(404).send();
+    }
+
+    session.unbanGame(unbannedGame);
     await session.save();
+    eventBus.next(new UpdateSessionEvent(session.id, session.toObject()));
     return res.status(200).send();
 });
 
 sessionRouter.post('/:id/games/', async (req, res) => {
     const user = req.user as HydratedDocument<IUser>;
-    const session = await Session.findById(req.params.id);
+    const session = await Session.findById(req.params.id).populate<{
+        users: HydratedDocument<IUser>[];
+        admins: HydratedDocument<IUser>[];
+        commonGames: HydratedDocument<IGame>[];
+        bannedGames: HydratedDocument<IGame>[];
+    }>([
+        {
+            path: 'users',
+            select: '_id username',
+        },
+        {
+            path: 'admins',
+            select: '_id username',
+        },
+        {
+            path: 'commonGames',
+            select: '_id name',
+        },
+        {
+            path: 'bannedGames',
+            select: '_id name',
+        },
+    ]);
     const addCustomGameRequest = req.body as AddCustomGameRequest;
     if (!session) {
         return res.status(404).send();
@@ -167,12 +295,35 @@ sessionRouter.post('/:id/games/', async (req, res) => {
 
     session.addCustomGame(addCustomGameRequest.customGame);
     await session.save();
+    eventBus.next(new UpdateSessionEvent(session.id, session.toObject()));
     return res.status(200).send();
 });
 
 sessionRouter.post('/:id/users/:userId', async (req, res) => {
     const user = req.user as HydratedDocument<IUser>;
-    const session = await Session.findById(req.params.id);
+    const session = await Session.findById(req.params.id).populate<{
+        users: HydratedDocument<IUser>[];
+        admins: HydratedDocument<IUser>[];
+        commonGames: HydratedDocument<IGame>[];
+        bannedGames: HydratedDocument<IGame>[];
+    }>([
+        {
+            path: 'users',
+            select: '_id username',
+        },
+        {
+            path: 'admins',
+            select: '_id username',
+        },
+        {
+            path: 'commonGames',
+            select: '_id name',
+        },
+        {
+            path: 'bannedGames',
+            select: '_id name',
+        },
+    ]);
     if (!session) {
         return res.status(404).send();
     }
@@ -180,20 +331,44 @@ sessionRouter.post('/:id/users/:userId', async (req, res) => {
     if (!newUser) {
         return res.status(404).send();
     }
-    const addSessionUserRequest = req.body as AddSessionUserRequest;
 
-    session.addUser(addSessionUserRequest.userId);
+    session.addUser(newUser);
     await session.save();
+    eventBus.next(new UpdateSessionEvent(session.id, session.toObject()));
     return res.status(200).send();
 });
 
 sessionRouter.post('/:id/chooseGame', async (req, res) => {
     const user = req.user as HydratedDocument<IUser>;
-    const session = await Session.findById(req.params.id);
+    const session = await Session.findById(req.params.id).populate<{
+        users: HydratedDocument<IUser>[];
+        admins: HydratedDocument<IUser>[];
+        commonGames: HydratedDocument<IGame>[];
+        bannedGames: HydratedDocument<IGame>[];
+    }>([
+        {
+            path: 'users',
+            select: '_id username',
+        },
+        {
+            path: 'admins',
+            select: '_id username',
+        },
+        {
+            path: 'commonGames',
+            select: '_id name',
+        },
+        {
+            path: 'bannedGames',
+            select: '_id name',
+        },
+    ]);
     if (!session) {
         return res.status(404).send();
     }
     const chosenGame = await session.chooseGame();
+    eventBus.next(new UpdateSessionEvent(session.id, session.toObject()));
+    eventBus.next(new ChooseGameEvent(session.id, chosenGame));
     return res.status(200).send();
 });
 

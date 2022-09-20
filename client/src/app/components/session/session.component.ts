@@ -1,27 +1,9 @@
-import { Component, OnDestroy } from '@angular/core';
+import { Component, OnDestroy, OnInit } from '@angular/core';
 import { FormControl, Validators } from '@angular/forms';
 import { ActivatedRoute } from '@angular/router';
-import {
-    concatMap,
-    exhaustMap,
-    map,
-    mergeMap,
-    Observable,
-    repeat,
-    shareReplay,
-    Subject,
-    Subscription,
-    tap,
-} from 'rxjs';
-import { ChooseGameEvent } from '../../../../../types/events';
+import { map, mergeMap, Observable, Subject, Subscription } from 'rxjs';
+import { SessionEvent } from '../../../../../types/events';
 import { CustomGame, Game, Session, User } from '../../../../../types/models';
-import {
-    AddCustomGameRequest,
-    AddSessionUserRequest,
-    BanGameRequest,
-    DeleteGameRequest,
-    UnbanGameRequest,
-} from '../../../../../types/requests';
 import FriendsService from '../../services/friends.service';
 import SessionService from '../../services/session.service';
 
@@ -30,48 +12,34 @@ import SessionService from '../../services/session.service';
     templateUrl: 'session.component.html',
     styles: [],
 })
-export class SessionComponent implements OnDestroy {
-    session$: Observable<Session>;
-    allowedCommonGames$: Observable<Game[]>;
-    customGameName = new FormControl('', {
+export class SessionComponent implements OnInit, OnDestroy {
+    public sessionId!: string;
+    public session$!: Observable<Session>;
+    public sessionEvents$!: Observable<SessionEvent>;
+    public allowedCommonGames$!: Observable<Game[]>;
+    public addableFriends$!: Observable<User[]>;
+    public customGameName = new FormControl('', {
         nonNullable: true,
         validators: [Validators.required],
     });
 
-    private refreshSessionRequests = new Subject<undefined>();
-    private subscriptions: Subscription[];
-    private syncGamesRequests = new Subject<undefined>();
-    private chooseGameRequests = new Subject<undefined>();
-    private deleteGameRequests = new Subject<CustomGame>();
-    private banGameRequests = new Subject<Game>();
-    private unbanGameRequests = new Subject<Game>();
-    private addCustomGameRequests = new Subject<CustomGame>();
-    private addSessionUserRequests = new Subject<string>();
-    public choseGameEvent = new Subject<ChooseGameEvent>();
-
-    public addableFriends$: Observable<User[]>;
     public newSessionUser = new FormControl('', { nonNullable: true });
+
+    private subscriptions: Subscription[] = [];
 
     constructor(
         private route: ActivatedRoute,
         private sessionService: SessionService,
         private friendsService: FriendsService
-    ) {
-        let sessionIdObservable = this.route.params.pipe(map((params): string => params['id']));
-        this.session$ = sessionIdObservable.pipe(
-            concatMap((id) =>
-                this.sessionService.getSession(id).pipe(
-                    repeat({
-                        delay: () => this.refreshSessionRequests,
-                    })
-                )
-            ),
-            shareReplay(1)
-        );
+    ) {}
+
+    ngOnInit(): void {
+        this.sessionId = this.route.snapshot.params['id'];
+        const { session$, sessionEvents$ } = this.sessionService.getSessionObservables(this.sessionId);
+        this.session$ = session$;
         this.allowedCommonGames$ = this.session$.pipe(
             map((session) => this.calculateAllowedGommonGames(session.commonGames, session.bannedGames))
         );
-
         this.addableFriends$ = this.session$.pipe(
             mergeMap((session) =>
                 this.friendsService
@@ -86,82 +54,15 @@ export class SessionComponent implements OnDestroy {
                     )
             )
         );
-
+        this.sessionEvents$ = sessionEvents$;
         this.subscriptions = [
-            this.syncGamesRequests.pipe(mergeMap(() => sessionIdObservable)).subscribe((id) => this._syncGames(id)),
-            this.chooseGameRequests.pipe(mergeMap(() => sessionIdObservable)).subscribe((id) => this._chooseGame(id)),
-            sessionIdObservable
-                .pipe(
-                    mergeMap((id) => this.sessionService.getSessionEvents(id)),
-                    tap((event) => {
-                        console.log(event);
-                        $('#chooseGameNotification').modal('show');
-                    })
-                )
-                .subscribe({
-                    next: (event) => this.choseGameEvent.next(event),
-                    complete: () => console.log(78),
-                }),
-            this.deleteGameRequests
-                .pipe(
-                    mergeMap((customGame) =>
-                        sessionIdObservable.pipe(
-                            map((sessionId) => ({
-                                sessionId,
-                                customGame,
-                            }))
-                        )
-                    )
-                )
-                .subscribe((deleteGameRequest) => this._deleteGame(deleteGameRequest)),
-            this.banGameRequests
-                .pipe(
-                    mergeMap((game) =>
-                        sessionIdObservable.pipe(
-                            map((sessionId) => ({
-                                sessionId,
-                                game,
-                            }))
-                        )
-                    )
-                )
-                .subscribe((banGameRequest) => this._banGame(banGameRequest)),
-            this.unbanGameRequests
-                .pipe(
-                    mergeMap((game) =>
-                        sessionIdObservable.pipe(
-                            map((sessionId) => ({
-                                sessionId,
-                                game,
-                            }))
-                        )
-                    )
-                )
-                .subscribe((unbanGameRequest) => this._unbanGame(unbanGameRequest)),
-            this.addCustomGameRequests
-                .pipe(
-                    mergeMap((customGame) =>
-                        sessionIdObservable.pipe(
-                            map((sessionId) => ({
-                                sessionId,
-                                customGame,
-                            }))
-                        )
-                    )
-                )
-                .subscribe((addCustomGameRequest) => this._addCustomGame(addCustomGameRequest)),
-            this.addSessionUserRequests
-                .pipe(
-                    mergeMap((userId) =>
-                        sessionIdObservable.pipe(
-                            map((sessionId) => ({
-                                sessionId,
-                                userId,
-                            }))
-                        )
-                    )
-                )
-                .subscribe((addSessionUserRequest) => this._addSessionUser(addSessionUserRequest)),
+            this.sessionEvents$.subscribe((event) => {
+                console.log(event);
+
+                if (event.event == 'ChooseGameEvent') {
+                    $('#chooseGameNotification').modal('show');
+                }
+            }),
         ];
     }
 
@@ -175,71 +76,40 @@ export class SessionComponent implements OnDestroy {
             return true;
         });
     }
+
     ngOnDestroy(): void {
         this.subscriptions.forEach((subscription) => subscription.unsubscribe());
     }
 
-    refreshSession() {
-        this.refreshSessionRequests.next(undefined);
-    }
-
     syncGames() {
-        this.syncGamesRequests.next(undefined);
-    }
-
-    private _syncGames(id: string) {
-        this.sessionService.syncSessionGames(id).subscribe(() => this.refreshSession());
+        this.sessionService.syncSessionGames(this.sessionId).subscribe();
     }
 
     chooseGame() {
-        this.chooseGameRequests.next(undefined);
-    }
-
-    private _chooseGame(id: string) {
-        console.log(149);
-        this.sessionService.chooseGame(id).subscribe(() => this.refreshSession());
+        this.sessionService.chooseGame(this.sessionId).subscribe();
     }
 
     deleteGame(customGame: CustomGame) {
-        this.deleteGameRequests.next(customGame);
-    }
-
-    private _deleteGame(deleteGameRequest: DeleteGameRequest) {
-        this.sessionService.deleteGame(deleteGameRequest).subscribe(() => this.refreshSession());
+        this.sessionService.deleteGame({ sessionId: this.sessionId, customGame }).subscribe();
     }
 
     banGame(game: Game) {
-        this.banGameRequests.next(game);
-    }
-
-    private _banGame(banGameRequest: BanGameRequest) {
-        this.sessionService.banGame(banGameRequest).subscribe(() => this.refreshSession());
+        this.sessionService.banGame({ sessionId: this.sessionId, game }).subscribe();
     }
 
     unbanGame(game: Game) {
-        this.unbanGameRequests.next(game);
-    }
-
-    private _unbanGame(unbanGameRequest: UnbanGameRequest) {
-        this.sessionService.unbanGame(unbanGameRequest).subscribe(() => this.refreshSession());
+        this.sessionService.unbanGame({ sessionId: this.sessionId, game }).subscribe();
     }
 
     addCustomGame() {
-        this.addCustomGameRequests.next({
-            name: this.customGameName.value,
-        });
-    }
-
-    private _addCustomGame(addCustomGameRequest: AddCustomGameRequest) {
-        this.sessionService.addCustomGame(addCustomGameRequest).subscribe(() => this.refreshSession());
+        this.sessionService
+            .addCustomGame({ sessionId: this.sessionId, customGame: { name: this.customGameName.value } })
+            .subscribe();
     }
 
     addSessionUser() {
-        this.addSessionUserRequests.next(this.newSessionUser.value);
-        this.newSessionUser.reset();
-    }
-
-    private _addSessionUser(addSessionUserRequest: AddSessionUserRequest) {
-        this.sessionService.addSessionUser(addSessionUserRequest).subscribe(() => this.refreshSession());
+        this.sessionService
+            .addSessionUser({ sessionId: this.sessionId, userId: this.newSessionUser.value })
+            .subscribe(() => this.newSessionUser.reset());
     }
 }

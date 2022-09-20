@@ -1,9 +1,7 @@
-import { model, Schema, Types } from 'mongoose';
+import { MergeType, model, Schema, Types } from 'mongoose';
 import { Game } from '../../types/models';
 
-export interface IGame extends Omit<Game, '_id'> {
-    _id: Types.ObjectId;
-}
+export interface IGame extends MergeType<Game, { _id: Types.ObjectId }> {}
 
 export default model<IGame>(
     'Game',

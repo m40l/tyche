@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { fromEvent, map, Observable } from 'rxjs';
+import { concatWith, filter, fromEvent, map, Observable } from 'rxjs';
 import {
     AddCustomGameRequest,
     AddSessionUserRequest,
@@ -18,13 +18,24 @@ import { SessionEvent } from '../../../../types/events';
 export default class SessionService {
     constructor(private httpClient: HttpClient) {}
 
-    getSession(id: string): Observable<Session> {
-        return this.httpClient.get<Session>(`/api/sessions/${id}`);
-    }
-
-    getSessionEvents(id: string): Observable<SessionEvent> {
+    getSessionObservables(id: string): { session$: Observable<Session>; sessionEvents$: Observable<SessionEvent> } {
         const es = new EventSource(`/sse/sessions/${id}`);
-        return fromEvent<MessageEvent>(es, 'message').pipe(map((event) => JSON.parse(event.data)));
+        const sessionEvents$ = fromEvent<MessageEvent<string>>(es, 'message').pipe(
+            map((event) => JSON.parse(event.data) as SessionEvent)
+        );
+        return {
+            session$: this.httpClient.get<Session>(`/api/sessions/${id}`).pipe(
+                concatWith(
+                    sessionEvents$.pipe(
+                        filter((event) => event.event === 'UpdateSessionEvent'),
+                        map((event) => {
+                            return event.data;
+                        })
+                    )
+                )
+            ),
+            sessionEvents$,
+        };
     }
 
     createSession(createSessionForm: CreateSessionForm): Observable<Object> {

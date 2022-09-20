@@ -1,19 +1,22 @@
 import randomWords from 'random-words';
-import { HydratedDocument, model, Schema, Types } from 'mongoose';
+import { HydratedDocument, MergeType, model, Schema, Types } from 'mongoose';
 import { OwnedGame, Platform, User } from '../../types/models';
 import SteamClient from '../clients/steam-client';
 import Game from './Game';
 
 const generateFriendCode = () => randomWords({ exactly: 4, join: ' ' });
 
-export interface IOwnedGame extends Omit<OwnedGame, 'game'> {
-    game: Types.ObjectId;
-}
+export interface IOwnedGame extends MergeType<OwnedGame, { game: Types.ObjectId }> {}
 
-export interface IUser extends Omit<User, '_id' | 'friends' | 'games'> {
-    _id: Types.ObjectId;
-    friends: Types.ObjectId[];
-    games: IOwnedGame[];
+export interface IUser
+    extends MergeType<
+        User,
+        {
+            _id: Types.ObjectId;
+            friends: Types.ObjectId[];
+            games: IOwnedGame[];
+        }
+    > {
     generateNewFriendCode(): void;
     setSteamUser(steamProfile: any): Promise<void>;
     syncSteamGames(): Promise<void>;

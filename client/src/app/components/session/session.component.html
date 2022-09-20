@@ -4,10 +4,7 @@
             <div class="mh-50">
                 <h3 class="d-flex justify-content-between">
                     Admins
-                    <div>
-                        <button class="btn btn-outline-primary mx-2" (click)="refreshSession()">Refresh Session</button>
-                        <button class="btn btn-outline-primary" (click)="syncGames()">Sync Common Games</button>
-                    </div>
+                    <button class="btn btn-outline-primary" (click)="syncGames()">Sync Common Games</button>
                 </h3>
                 <div class="list-group">
                     <li *ngFor="let admin of session.admins" class="list-group-item">{{admin.username}}</li>
@@ -97,9 +94,7 @@
                     <h5 class="modal-title">Your Next Game!</h5>
                 </div>
                 <div class="modal-body">
-                    <ng-container *ngIf="choseGameEvent | async as choseGameEvent">
-                        {{choseGameEvent.data.name}}
-                    </ng-container>
+                    <ng-container *ngIf="session.chosenGame"> {{session.chosenGame.name}} </ng-container>
                 </div>
                 <div class="modal-footer">
                     <button class="btn btn-secondary" data-bs-dismiss="modal">Close</button>

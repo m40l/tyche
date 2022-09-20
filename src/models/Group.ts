@@ -1,15 +1,19 @@
 import randomWords from 'random-words';
-import { model, Schema, Types } from 'mongoose';
+import { MergeType, model, Schema, Types } from 'mongoose';
 import { Group } from '../../types/models';
 
 const generateJoinCode = () => randomWords({ exactly: 4, join: ' ' });
 
-export interface IGroup extends Omit<Group, '_id' | 'users' | 'admins' | 'sessions'> {
-    _id: Types.ObjectId;
-    users: Types.ObjectId[];
-    admins: Types.ObjectId[];
-    sessions: Types.ObjectId[];
-}
+export interface IGroup
+    extends MergeType<
+        Group,
+        {
+            _id: Types.ObjectId;
+            users: Types.ObjectId[];
+            admins: Types.ObjectId[];
+            sessions: Types.ObjectId[];
+        }
+    > {}
 
 export default model<IGroup>(
     'Group',

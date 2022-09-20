@@ -1,25 +1,29 @@
 import _ from 'lodash';
-import { HydratedDocument, model, PopulateOptions, Schema, Types } from 'mongoose';
+import { HydratedDocument, MergeType, model, PopulateOptions, Schema, Types } from 'mongoose';
 import { ChooseGameEvent } from '../../types/events';
-import { CustomGame, SessionGame, User } from '../../types/models';
+import { CustomGame, Game, Session, SessionGame } from '../../types/models';
 import eventBus from '../events';
 import { IGame } from './Game';
+import { IUser } from './User';
 
-export interface ISession {
-    _id: Types.ObjectId;
-    admins: Types.ObjectId[];
-    users: Types.ObjectId[];
-    commonGames: Types.ObjectId[];
-    customGames: CustomGame[];
-    bannedGames: Types.ObjectId[];
-    chosenGame: SessionGame;
+export interface ISession
+    extends MergeType<
+        Session,
+        {
+            _id: Types.ObjectId;
+            admins: Types.ObjectId[];
+            users: Types.ObjectId[];
+            commonGames: Types.ObjectId[];
+            bannedGames: Types.ObjectId[];
+        }
+    > {
     getSessionGames(): Promise<SessionGame[]>;
     chooseGame(): Promise<SessionGame>;
-    banGame(gameId: string): void;
-    unbanGame(gameId: string): void;
+    banGame(game: HydratedDocument<IGame>): void;
+    unbanGame(game: HydratedDocument<IGame>): void;
     addCustomGame(game: CustomGame): void;
     deleteCustomGame(game: CustomGame): void;
-    addUser(userId: string): void;
+    addUser(user: HydratedDocument<IUser>): void;
 }
 
 export default model<ISession>(
@@ -104,16 +108,19 @@ export default model<ISession>(
 
                     this.chosenGame = chosenGame;
                     await this.save();
-                    eventBus.next(new ChooseGameEvent(this._id.toHexString(), chosenGame));
                     return chosenGame;
                 },
-                banGame(gameId: string) {
-                    const game = new Types.ObjectId(gameId);
+                banGame(
+                    this: MergeType<ISession, { bannedGames: HydratedDocument<IGame>[] }>,
+                    game: HydratedDocument<IGame>
+                ) {
                     this.bannedGames = _.unionWith(this.bannedGames, [game], (a, b) => a.equals(b));
                 },
-                unbanGame(gameId: string) {
-                    const unbannedGame = new Types.ObjectId(gameId);
-                    this.bannedGames = _.reject(this.bannedGames, (bannedGame) => bannedGame.equals(unbannedGame));
+                unbanGame(
+                    this: MergeType<ISession, { bannedGames: HydratedDocument<IGame>[] }>,
+                    game: HydratedDocument<IGame>
+                ) {
+                    this.bannedGames = _.reject(this.bannedGames, (bannedGame) => bannedGame.equals(game));
                 },
                 addCustomGame(game: CustomGame) {
                     this.customGames = _.unionWith(this.customGames, [game], (a, b) => a.name == b.name);
@@ -121,8 +128,10 @@ export default model<ISession>(
                 deleteCustomGame(game: CustomGame) {
                     this.customGames = _.reject(this.customGames, (a) => a.name == game.name);
                 },
-                addUser(userId: string) {
-                    const user = new Types.ObjectId(userId);
+                addUser(
+                    this: MergeType<ISession, { users: HydratedDocument<IUser>[] }>,
+                    user: HydratedDocument<IUser>
+                ) {
                     this.users = _.unionWith(this.users, [user], (a, b) => a.equals(b));
                 },
             },

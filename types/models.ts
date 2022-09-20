@@ -23,6 +23,7 @@ export interface Session {
     commonGames: Game[];
     customGames: CustomGame[];
     bannedGames: Game[];
+    chosenGame: SessionGame;
 }
 
 export interface OwnedGame {

@@ -17,13 +17,20 @@ export interface CreateSessionForm {
     newSessionUsers?: string[];
     group?: string;
 }
-
 export interface AddCustomGameRequest {
     sessionId: string;
     customGame: CustomGame;
 }
-
 export interface AddSessionUserRequest {
     sessionId: string;
     userId: string;
+}
+export interface AddFriendRequest {
+    friendCode: string;
+}
+export interface AddGroupRequest {
+    name: string;
+}
+export interface LeaveGroupRequest {
+    groupId: string;
 }

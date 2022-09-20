@@ -1,5 +1,6 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
+import { AddFriendRequest } from '../../../../types/requests';
 
 @Injectable({
     providedIn: 'root',
@@ -7,9 +8,7 @@ import { HttpClient } from '@angular/common/http';
 export default class FriendService {
     constructor(private httpClient: HttpClient) {}
 
-    newFriend(search: string) {
-        return this.httpClient.post(`/api/friends/`, {
-            search,
-        });
+    newFriend(request: AddFriendRequest) {
+        return this.httpClient.post(`/api/friends/`, request);
     }
 }

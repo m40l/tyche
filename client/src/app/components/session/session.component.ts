@@ -57,8 +57,6 @@ export class SessionComponent implements OnInit, OnDestroy {
         this.sessionEvents$ = sessionEvents$;
         this.subscriptions = [
             this.sessionEvents$.subscribe((event) => {
-                console.log(event);
-
                 if (event.event == 'ChooseGameEvent') {
                     $('#chooseGameNotification').modal('show');
                 }

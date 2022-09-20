@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
+import { AddGroupRequest, LeaveGroupRequest } from '../../../../types/requests';
 
 @Injectable({
     providedIn: 'root',
@@ -8,11 +9,13 @@ import { Observable } from 'rxjs';
 export default class GroupService {
     constructor(private httpClient: HttpClient) {}
 
-    leaveGroup(id: string): Observable<Object> {
-        return this.httpClient.delete(`/api/groups/${id}`);
+    leaveGroup(leaveGroupRequest: LeaveGroupRequest): Observable<Object> {
+        return this.httpClient.delete(`/api/groups/${leaveGroupRequest.groupId}`, {
+            body: leaveGroupRequest,
+        });
     }
 
-    newGroup(groupName: string): Observable<Object> {
-        return this.httpClient.post(`/api/groups`, { name: groupName });
+    newGroup(addGroupRequest: AddGroupRequest): Observable<Object> {
+        return this.httpClient.post(`/api/groups`, addGroupRequest);
     }
 }

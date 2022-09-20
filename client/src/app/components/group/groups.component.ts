@@ -1,4 +1,5 @@
 import { Component } from '@angular/core';
+import { FormControl } from '@angular/forms';
 import { Observable } from 'rxjs';
 import FriendService from 'src/services/friend.service';
 import GroupService from 'src/services/group.service';
@@ -18,9 +19,9 @@ export class GroupsComponent {
     groups$ = new Observable<Group[]>();
     friends$ = new Observable<User[]>();
     selectedGroup?: Group;
-    newGroupName = '';
-    newFriendSearch = '';
-    memberSearch = '';
+    newGroupName = new FormControl('', { nonNullable: true });
+    newFriendCode = new FormControl('', { nonNullable: true });
+    memberSearch = new FormControl('', { nonNullable: true });
 
     constructor(
         private currentUserService: CurrentUserService,
@@ -34,23 +35,29 @@ export class GroupsComponent {
         this.friends$ = this.friendsService.friendsObservable();
     }
 
-    newGroup(): void {
-        this.groupService.newGroup(this.newGroupName).subscribe(() => this.groupsService.refreshGroups());
+    newFriend(): void {
+        this.friendService.newFriend({ friendCode: this.newFriendCode.value }).subscribe(() => {
+            this.newFriendCode.reset();
+            this.friendsService.refreshFriends();
+        });
     }
 
-    leaveGroup(id: string): void {
-        this.groupService.leaveGroup(id).subscribe(() => this.groupsService.refreshGroups());
-    }
-
-    removeMember(id: string): void {
+    removeFriend(user: User): void {
         //TODO
     }
 
-    newFriend(): void {
-        this.friendService.newFriend(this.newFriendSearch).subscribe(() => this.friendsService.refreshFriends());
+    newGroup(): void {
+        this.groupService.newGroup({ name: this.newGroupName.value }).subscribe(() => {
+            this.newGroupName.reset();
+            this.groupsService.refreshGroups();
+        });
     }
 
-    removeFriend(id: string): void {
+    leaveGroup(group: Group): void {
+        this.groupService.leaveGroup({ groupId: group._id }).subscribe(() => this.groupsService.refreshGroups());
+    }
+
+    removeMember(user: User): void {
         //TODO
     }
 }

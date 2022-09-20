@@ -2,6 +2,7 @@ import * as express from 'express';
 import { IUser } from '../models/User';
 import Group, { IGroup } from '../models/Group';
 import { HydratedDocument } from 'mongoose';
+import { AddGroupRequest } from '../../types/requests';
 
 const groupRouter = express.Router();
 groupRouter.use(express.json());
@@ -33,39 +34,28 @@ groupRouter.get('/:id', async (req, res) => {
     }
 });
 
+//TODO This should be refactored to delete the group, not leave it. Leaving it as it is bc nobody cares about groups
 groupRouter.delete('/:id', async (req, res) => {
-    const id = req?.params?.id;
+    const id = req.params.id;
     const group = await Group.findById(id);
     if (!group) {
         return res.status(404).send();
     }
     const user = req.user as HydratedDocument<IUser>;
 
-    if (group.users.includes(user._id)) {
-        group.users.splice(group.users.indexOf(user._id), 1);
-        await group.save();
-        return res.status(204).send();
-    } else {
-        res.status(400).send(`User is not part of group`);
-    }
+    group.removeUser(user._id.toHexString());
+    await group.save();
+    return res.status(204).send();
 });
 
 groupRouter.post('/', async (req, res) => {
-    const groupName = req?.body?.name;
-    Group.create({
-        name: groupName,
+    const addGroupRequest = req.body as AddGroupRequest;
+    await Group.create({
+        name: addGroupRequest.name,
         admins: [req.user],
         users: [req.user],
-    })
-        .then(() => {
-            res.status(200).send();
-        })
-        .catch((err) => {
-            res.status(400).send({
-                message: 'Failed to create group',
-                err: err,
-            });
-        });
+    });
+    res.status(200).send();
 });
 
 export default groupRouter;

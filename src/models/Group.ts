@@ -1,6 +1,7 @@
 import randomWords from 'random-words';
-import { MergeType, model, Schema, Types } from 'mongoose';
+import { HydratedDocument, MergeType, model, Schema, Types } from 'mongoose';
 import { Group } from '../../types/models';
+import _ from 'lodash';
 
 const generateJoinCode = () => randomWords({ exactly: 4, join: ' ' });
 
@@ -13,7 +14,11 @@ export interface IGroup
             admins: Types.ObjectId[];
             sessions: Types.ObjectId[];
         }
-    > {}
+    > {
+    generateNewJoinCode(): void;
+    addUser(userId: string): void;
+    removeUser(userId: string): void;
+}
 
 export default model<IGroup>(
     'Group',
@@ -51,9 +56,16 @@ export default model<IGroup>(
         },
         {
             methods: {
-                generateNewJoinCode(cb) {
+                generateNewJoinCode() {
                     this.joinCode = generateJoinCode();
-                    cb();
+                },
+                addUser(userId: string) {
+                    const user = new Types.ObjectId(userId);
+                    this.users = _.unionWith(this.users, [user], (a, b) => a.equals(b));
+                },
+                removeUser(userId: string) {
+                    const user = new Types.ObjectId(userId);
+                    this.users = _.reject(this.users, (a) => a.equals(user));
                 },
             },
         }

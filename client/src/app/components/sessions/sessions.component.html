@@ -41,7 +41,18 @@
                     [closeOnSelect]="false"
                     [hideSelected]="true"
                     placeholder="Enter friend code or Select a friend"
+                    [loading]="newSessionUsersLoading"
+                    [addTag]="addFriendByCode.bind(this)"
                 >
+                    <ng-template ng-tag-tmp let-friendCode="searchTerm">
+                        <b>Add from friend code</b>:
+                        <span [ngClass]="{ 'text-decoration-line-through': invalidFriendCodesSet.has(friendCode) }"
+                            >{{friendCode}}</span
+                        >
+                        <span class="text-small text-danger" *ngIf="invalidFriendCodesSet.has(friendCode)">
+                            Friend code does not exist
+                        </span>
+                    </ng-template>
                 </ng-select>
             </ng-template>
             <button type="submit" class="btn btn-success">New Session</button>

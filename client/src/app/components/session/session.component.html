@@ -23,7 +23,19 @@
                                 bindValue="_id"
                                 placeholder="Enter friend code or Select a friend"
                                 (change)="addSessionUser()"
+                                [loading]="addSessionUserLoading"
+                                [addTag]="addFriendByCode.bind(this)"
                             >
+                                <ng-template ng-tag-tmp let-friendCode="searchTerm">
+                                    <b>Add from friend code</b>:
+                                    <span
+                                        [ngClass]="{ 'text-decoration-line-through': invalidFriendCodesSet.has(friendCode) }"
+                                        >{{friendCode}}</span
+                                    >
+                                    <span class="text-small text-danger" *ngIf="invalidFriendCodesSet.has(friendCode)">
+                                        Friend code does not exist
+                                    </span>
+                                </ng-template>
                             </ng-select>
                         </li>
                         <ng-template #noAddableFriends>

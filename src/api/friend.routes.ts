@@ -1,5 +1,6 @@
 import * as express from 'express';
 import { HydratedDocument } from 'mongoose';
+import { AddFriendRequest } from '../../types/requests';
 import User, { IUser } from '../models/User';
 
 const friendRouter = express.Router();
@@ -13,20 +14,19 @@ friendRouter.get('/', async (req, res) => {
 
 friendRouter.post('/', async (req, res) => {
     const user = req.user as HydratedDocument<IUser>;
+    const addFriendRequest = req.body as AddFriendRequest;
 
-    const friend = await User.findOne({
-        $or: [{ friendCode: req?.body?.search }, { email: req?.body?.search }],
-    });
+    const friend = await User.findOne({ friendCode: addFriendRequest.friendCode.trim() });
     if (!friend) {
         return res.status(404).send();
     }
 
-    friend.friends.push(user._id);
+    friend.befriend(user._id);
     await friend.save();
-    user.friends.push(friend._id);
+    user.befriend(friend._id);
     await user.save();
 
-    res.status(200).send();
+    res.status(200).send(friend);
 });
 
 export default friendRouter;

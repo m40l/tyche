@@ -1,9 +1,10 @@
 import { Component, OnDestroy, OnInit } from '@angular/core';
 import { FormControl, Validators } from '@angular/forms';
 import { ActivatedRoute } from '@angular/router';
-import { map, mergeMap, Observable, Subject, Subscription } from 'rxjs';
+import { catchError, EMPTY, lastValueFrom, map, mergeMap, Observable, Subject, Subscription, tap } from 'rxjs';
 import { SessionEvent } from '../../../../../types/events';
 import { CustomGame, Game, Session, User } from '../../../../../types/models';
+import FriendService from '../../services/friend.service';
 import FriendsService from '../../services/friends.service';
 import SessionService from '../../services/session.service';
 
@@ -24,13 +25,16 @@ export class SessionComponent implements OnInit, OnDestroy {
     });
 
     public newSessionUser = new FormControl('', { nonNullable: true });
+    public addSessionUserLoading = false;
+    public invalidFriendCodesSet = new Set();
 
     private subscriptions: Subscription[] = [];
 
     constructor(
         private route: ActivatedRoute,
         private sessionService: SessionService,
-        private friendsService: FriendsService
+        private friendsService: FriendsService,
+        public friendService: FriendService
     ) {}
 
     ngOnInit(): void {
@@ -109,5 +113,21 @@ export class SessionComponent implements OnInit, OnDestroy {
         this.sessionService
             .addSessionUser({ sessionId: this.sessionId, userId: this.newSessionUser.value })
             .subscribe(() => this.newSessionUser.reset());
+    }
+
+    addFriendByCode(friendCode: string): Promise<User> {
+        this.addSessionUserLoading = true;
+        return lastValueFrom(
+            this.friendService.newFriend({ friendCode }).pipe(
+                catchError((err: Response) => {
+                    if (err.status === 404) {
+                        this.invalidFriendCodesSet.add(friendCode);
+                    }
+                    this.addSessionUserLoading = false;
+                    return EMPTY;
+                }),
+                tap(() => (this.addSessionUserLoading = false))
+            )
+        );
     }
 }

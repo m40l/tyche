@@ -3,6 +3,7 @@ import { HydratedDocument, MergeType, model, Schema, Types } from 'mongoose';
 import { OwnedGame, Platform, User } from '../../types/models';
 import SteamClient from '../clients/steam-client';
 import Game from './Game';
+import _ from 'lodash';
 
 const generateFriendCode = () => randomWords({ exactly: 4, join: ' ' });
 
@@ -20,6 +21,7 @@ export interface IUser
     generateNewFriendCode(): void;
     setSteamUser(steamProfile: any): Promise<void>;
     syncSteamGames(): Promise<void>;
+    befriend(userId: Types.ObjectId): void;
 }
 
 let UserSchema = new Schema<IUser>(
@@ -92,52 +94,49 @@ let UserSchema = new Schema<IUser>(
                     throw new Error('User must have steam user to sync with steam');
                 }
                 let steam = new SteamClient();
-                steam
-                    .getOwnedGames({
-                        steamid: this.steamUser.id,
-                        include_appinfo: true,
-                        include_played_free_games: true,
-                    })
-                    .then(async (steamGames) => {
-                        await Game.bulkWrite(
-                            steamGames.response.games.map((game) => ({
-                                updateOne: {
-                                    filter: { appId: game.appid },
-                                    update: {
-                                        $set: {
-                                            name: game.name,
-                                            iconUrl: game.img_icon_url,
-                                            logoUrl: game.img_logo_url,
-                                        },
-                                        $setOnInsert: {
-                                            appId: game.appid,
-                                        },
-                                    },
-                                    upsert: true,
+                const steamGames = await steam.getOwnedGames({
+                    steamid: this.steamUser.id,
+                    include_appinfo: true,
+                    include_played_free_games: true,
+                });
+                await Game.bulkWrite(
+                    steamGames.response.games.map((game) => ({
+                        updateOne: {
+                            filter: { appId: game.appid },
+                            update: {
+                                $set: {
+                                    name: game.name,
+                                    iconUrl: game.img_icon_url,
+                                    logoUrl: game.img_logo_url,
                                 },
-                            }))
-                        );
-                        const ownedGamesModels = await Game.find(
-                            {
-                                appId: { $in: steamGames.response.games.map((game) => game.appid) },
+                                $setOnInsert: {
+                                    appId: game.appid,
+                                },
                             },
-                            '_id'
-                        );
+                            upsert: true,
+                        },
+                    }))
+                );
+                const ownedGamesModels = await Game.find(
+                    {
+                        appId: { $in: steamGames.response.games.map((game) => game.appid) },
+                    },
+                    '_id'
+                );
 
-                        let existingOwnedGames: IOwnedGame[] = [...this.games];
+                let existingOwnedGames: IOwnedGame[] = [...this.games];
 
-                        this.games = existingOwnedGames
-                            .filter((game) => game.platform !== Platform.Steam)
-                            .concat(
-                                ownedGamesModels.map((gameModel) => ({
-                                    game: gameModel._id,
-                                    platform: Platform.Steam,
-                                }))
-                            );
-                    })
-                    .catch((err) => {
-                        throw new Error('Failed to reach Steam' + err);
-                    });
+                this.games = existingOwnedGames
+                    .filter((game) => game.platform !== Platform.Steam)
+                    .concat(
+                        ownedGamesModels.map((gameModel) => ({
+                            game: gameModel._id,
+                            platform: Platform.Steam,
+                        }))
+                    );
+            },
+            befriend(user: HydratedDocument<IUser>) {
+                this.friends = _.unionWith(this.friends, [user._id], (a, b) => a.equals(b));
             },
         },
         toJSON: { virtuals: true },

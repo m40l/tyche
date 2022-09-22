@@ -5,7 +5,6 @@ import { HydratedDocument } from 'mongoose';
 import { AddGroupRequest } from '../../types/requests';
 
 const groupRouter = express.Router();
-groupRouter.use(express.json());
 
 groupRouter.get('/', async (req, res) => {
     const user = req.user as HydratedDocument<IUser>;

@@ -22,6 +22,7 @@ export interface IUser
     setSteamUser(steamProfile: any): Promise<void>;
     syncSteamGames(): Promise<void>;
     befriend(userId: Types.ObjectId): void;
+    addCustomGame(gameId: string): void;
 }
 
 let UserSchema = new Schema<IUser>(
@@ -137,6 +138,19 @@ let UserSchema = new Schema<IUser>(
             },
             befriend(user: HydratedDocument<IUser>) {
                 this.friends = _.unionWith(this.friends, [user._id], (a, b) => a.equals(b));
+            },
+            addCustomGame(gameId: string) {
+                const game = new Types.ObjectId(gameId);
+                this.games = _.unionWith(
+                    this.games,
+                    [
+                        {
+                            game,
+                            platform: Platform.None,
+                        },
+                    ],
+                    (a, b) => a.game.equals(b.game)
+                );
             },
         },
         toJSON: { virtuals: true },

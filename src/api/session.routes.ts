@@ -17,7 +17,6 @@ import eventBus from '../events';
 import { ChooseGameEvent, UpdateSessionEvent } from '../../types/events';
 
 const sessionRouter = express.Router();
-sessionRouter.use(express.json());
 
 sessionRouter.get('/', async (req, res) => {
     const user = req.user as HydratedDocument<IUser>;

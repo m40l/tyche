@@ -1,13 +1,11 @@
 import * as express from 'express';
 import _ from 'lodash';
-import { HydratedDocument, Types } from 'mongoose';
-import { Platform } from '../../types/models';
-import SteamClient from '../clients/steam-client';
+import { HydratedDocument } from 'mongoose';
+import { AddOffPlatformGameRequest } from '../../types/requests';
 import Game, { IGame } from '../models/Game';
-import { IOwnedGame, IUser } from '../models/User';
+import { IUser } from '../models/User';
 
 const gameRouter = express.Router();
-gameRouter.use(express.json());
 
 gameRouter.get('/', async (req, res) => {
     const user = req.user as HydratedDocument<IUser>;
@@ -24,17 +22,8 @@ gameRouter.get('/', async (req, res) => {
 
 gameRouter.post('/', async (req, res) => {
     const user = req.user as HydratedDocument<IUser>;
-    const { id } = req.body;
-    user.games = _.unionWith(
-        user.games,
-        [
-            {
-                game: new Types.ObjectId(id),
-                platform: Platform.None,
-            },
-        ],
-        (a, b) => a.game.equals(b.game)
-    );
+    const addOffPlatformGameRequest = req.body as AddOffPlatformGameRequest;
+    user.addCustomGame(addOffPlatformGameRequest.gameId);
     await user.save();
     return res.status(200).send();
 });

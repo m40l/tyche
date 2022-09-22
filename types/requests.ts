@@ -34,3 +34,6 @@ export interface AddGroupRequest {
 export interface LeaveGroupRequest {
     groupId: string;
 }
+export interface AddOffPlatformGameRequest {
+    gameId: string;
+}

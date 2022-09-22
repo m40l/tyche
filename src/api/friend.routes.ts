@@ -4,7 +4,6 @@ import { AddFriendRequest } from '../../types/requests';
 import User, { IUser } from '../models/User';
 
 const friendRouter = express.Router();
-friendRouter.use(express.json());
 
 friendRouter.get('/', async (req, res) => {
     const user = req.user as HydratedDocument<IUser>;

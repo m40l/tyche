@@ -84,11 +84,12 @@ export default model<ISession>(
             methods: {
                 can(user: HydratedDocument<IUser>, action: string) {
                     const isSessionAdmin = _.some(this.admins, (sessionUser: HydratedDocument<IUser>) =>
-                        sessionUser.equals(user)
+                        sessionUser._id.equals(user._id)
                     );
                     const isSessionUser =
-                        _.some(this.users, (sessionUser: HydratedDocument<IUser>) => sessionUser.equals(user)) ||
-                        isSessionAdmin;
+                        _.some(this.users, (sessionUser: HydratedDocument<IUser>) =>
+                            sessionUser._id.equals(user._id)
+                        ) || isSessionAdmin;
 
                     switch (action) {
                         case 'getSession':

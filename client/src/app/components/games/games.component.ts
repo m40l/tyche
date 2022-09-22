@@ -76,10 +76,14 @@ export class GamesComponent {
 
     onChange() {
         if (this.newGameSelected) {
-            this.gameService.addGame(this.newGameSelected).subscribe(() => {
-                this.gamesService.refreshGames();
-                this.newGameSelected = undefined;
-            });
+            this.gameService
+                .addGame({
+                    gameId: this.newGameSelected,
+                })
+                .subscribe(() => {
+                    this.gamesService.refreshGames();
+                    this.newGameSelected = undefined;
+                });
         }
     }
 

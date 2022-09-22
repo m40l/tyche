@@ -2,6 +2,7 @@ import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable, ReplaySubject, Subject, throttleTime } from 'rxjs';
 import { Game, OwnedGame } from '../../../../types/models';
+import { AddOffPlatformGameRequest } from '../../../../types/requests';
 
 @Injectable({
     providedIn: 'root',
@@ -21,9 +22,7 @@ export default class GameService {
         });
     }
 
-    addGame(id: string): Observable<object> {
-        return this.httpClient.post(`/api/games/`, {
-            id,
-        });
+    addGame(addOffPlatformGameRequest: AddOffPlatformGameRequest): Observable<object> {
+        return this.httpClient.post(`/api/games/`, addOffPlatformGameRequest);
     }
 }

@@ -1,10 +1,8 @@
 import _ from 'lodash';
 import { HydratedDocument, MergeType, model, PopulateOptions, Schema, Types } from 'mongoose';
-import { ChooseGameEvent } from '../../types/events';
-import { CustomGame, Game, Session, SessionGame } from '../../types/models';
-import eventBus from '../events';
+import { CustomGame, Session, SessionGame } from '../../types/models';
 import { IGame } from './Game';
-import { IUser } from './User';
+import { IOwnedGame, IUser } from './User';
 
 export interface ISession
     extends MergeType<
@@ -24,6 +22,8 @@ export interface ISession
     addCustomGame(game: CustomGame): void;
     deleteCustomGame(game: CustomGame): void;
     addUser(user: HydratedDocument<IUser>): void;
+    can(user: HydratedDocument<IUser>, action: string): boolean;
+    syncCommonGames(): void;
 }
 
 export default model<ISession>(
@@ -70,9 +70,49 @@ export default model<ISession>(
                     type: String,
                 },
             },
+            allowUsers: {
+                chooseGame: { type: Boolean, default: true },
+                banGame: { type: Boolean, default: true },
+                unbanGame: { type: Boolean, default: true },
+                addCustomGame: { type: Boolean, default: true },
+                deleteCustomGame: { type: Boolean, default: true },
+                addUser: { type: Boolean, default: true },
+                syncCommonGames: { type: Boolean, default: true },
+            },
         },
         {
             methods: {
+                can(user: HydratedDocument<IUser>, action: string) {
+                    const isSessionAdmin = _.some(this.admins, (sessionUser: HydratedDocument<IUser>) =>
+                        sessionUser.equals(user)
+                    );
+                    const isSessionUser =
+                        _.some(this.users, (sessionUser: HydratedDocument<IUser>) => sessionUser.equals(user)) ||
+                        isSessionAdmin;
+
+                    switch (action) {
+                        case 'getSession':
+                            return isSessionUser;
+                        case 'getSessionGames':
+                            return isSessionUser;
+                        case 'chooseGame':
+                            return this.allowUsers.chooseGame ? isSessionUser : isSessionAdmin;
+                        case 'banGame':
+                            return this.allowUsers.banGame ? isSessionUser : isSessionAdmin;
+                        case 'unbanGame':
+                            return this.allowUsers.unbanGame ? isSessionUser : isSessionAdmin;
+                        case 'addCustomGame':
+                            return this.allowUsers.addCustomGame ? isSessionUser : isSessionAdmin;
+                        case 'deleteCustomGame':
+                            return this.allowUsers.deleteCustomGame ? isSessionUser : isSessionAdmin;
+                        case 'addUser':
+                            return this.allowUsers.addUser ? isSessionUser : isSessionAdmin;
+                        case 'syncCommonGames':
+                            return this.allowUsers.syncCommonGames ? isSessionUser : isSessionAdmin;
+                        default:
+                            return false;
+                    }
+                },
                 async getSessionGames() {
                     const toPopulate: PopulateOptions[] = [];
                     if (!this.populated('commonGames')) {
@@ -133,6 +173,30 @@ export default model<ISession>(
                     user: HydratedDocument<IUser>
                 ) {
                     this.users = _.unionWith(this.users, [user], (a, b) => a.equals(b));
+                },
+                syncCommonGames(
+                    this: MergeType<
+                        ISession,
+                        {
+                            users: HydratedDocument<
+                                MergeType<
+                                    IUser,
+                                    {
+                                        games: MergeType<
+                                            IOwnedGame,
+                                            {
+                                                game: HydratedDocument<IGame>;
+                                            }
+                                        >[];
+                                    }
+                                >
+                            >[];
+                            commonGames: HydratedDocument<IGame>[];
+                        }
+                    >
+                ) {
+                    const usersGames = this.users.map((user) => _.map(user.games, 'game'));
+                    this.commonGames = _.intersectionWith(...usersGames, (a: IGame, b: IGame) => a._id.equals(b._id));
                 },
             },
             toJSON: { virtuals: true },

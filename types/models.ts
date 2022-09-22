@@ -24,6 +24,15 @@ export interface Session {
     customGames: CustomGame[];
     bannedGames: Game[];
     chosenGame: SessionGame;
+    allowUsers: {
+        chooseGame: boolean;
+        banGame: boolean;
+        unbanGame: boolean;
+        addCustomGame: boolean;
+        deleteCustomGame: boolean;
+        addUser: boolean;
+        syncCommonGames: boolean;
+    };
 }
 
 export interface OwnedGame {

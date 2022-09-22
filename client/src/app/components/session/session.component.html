@@ -25,6 +25,7 @@
                                 (change)="addSessionUser()"
                                 [loading]="addSessionUserLoading"
                                 [addTag]="addFriendByCode.bind(this)"
+                                appendTo="body"
                             >
                                 <ng-template ng-tag-tmp let-friendCode="searchTerm">
                                     <b>Add from friend code</b>:

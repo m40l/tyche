@@ -28,7 +28,13 @@
                 <label for="sessionFromFriends" class="btn btn-outline-secondary">From Friends</label>
             </div>
             <ng-template [ngIf]="createSessionForm.value.sessionFrom == 'sessionFromGroup'">
-                <ng-select formControlName="group" [items]="groups" bindLabel="name" bindValue="_id"></ng-select>
+                <ng-select
+                    formControlName="group"
+                    [items]="groups"
+                    bindLabel="name"
+                    bindValue="_id"
+                    appendTo="body"
+                ></ng-select>
             </ng-template>
             <ng-template [ngIf]="createSessionForm.value.sessionFrom == 'sessionFromFriends'">
                 <ng-select
@@ -43,6 +49,7 @@
                     placeholder="Enter friend code or Select a friend"
                     [loading]="newSessionUsersLoading"
                     [addTag]="addFriendByCode.bind(this)"
+                    appendTo="body"
                 >
                     <ng-template ng-tag-tmp let-friendCode="searchTerm">
                         <b>Add from friend code</b>:

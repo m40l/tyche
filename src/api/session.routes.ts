@@ -8,7 +8,6 @@ import _ from 'lodash';
 import Game, { IGame } from '../models/Game';
 import {
     AddCustomGameRequest,
-    AddSessionUserRequest,
     BanGameRequest,
     CreateSessionForm,
     DeleteGameRequest,
@@ -68,7 +67,7 @@ sessionRouter.get('/:id', async (req, res) => {
     if (!session) {
         return res.status(404).send();
     }
-    if (!_.some(session.users, (sessionUser) => sessionUser.equals(user))) {
+    if (!session.can(user, 'getSession')) {
         return res.status(404).send();
     }
 
@@ -136,9 +135,10 @@ sessionRouter.post('/:id/sync/games', async (req, res) => {
     if (!session) {
         return res.status(404).send();
     }
-
-    const usersGames = session.users.map((user) => _.map(user.games, 'game'));
-    session.commonGames = _.intersectionWith(...usersGames, (a: IGame, b: IGame) => a._id.equals(b._id));
+    if (!session.can(user, 'syncCommonGames')) {
+        return res.status(403).send();
+    }
+    session.syncCommonGames();
     await session.save();
     eventBus.next(new UpdateSessionEvent(session.id, session.toObject()));
 
@@ -173,6 +173,9 @@ sessionRouter.delete('/:id/games', async (req, res) => {
     const deleteGameRequest = req.body as DeleteGameRequest;
     if (!session) {
         return res.status(404).send();
+    }
+    if (!session.can(user, 'deleteCustomGame')) {
+        return res.status(403).send();
     }
 
     session.deleteCustomGame(deleteGameRequest.customGame);
@@ -209,6 +212,9 @@ sessionRouter.delete('/:id/games/:gameid', async (req, res) => {
     const banGameRequest = req.body as BanGameRequest;
     if (!session) {
         return res.status(404).send();
+    }
+    if (!session.can(user, 'banGame')) {
+        return res.status(403).send();
     }
 
     const bannedGame = await Game.findById(banGameRequest.game._id);
@@ -251,6 +257,9 @@ sessionRouter.post('/:id/games/:gameid', async (req, res) => {
     if (!session) {
         return res.status(404).send();
     }
+    if (!session.can(user, 'unbanGame')) {
+        return res.status(403).send();
+    }
 
     const unbannedGame = await Game.findById(unbanGameRequest.game._id);
     if (!unbannedGame) {
@@ -292,6 +301,9 @@ sessionRouter.post('/:id/games/', async (req, res) => {
     if (!session) {
         return res.status(404).send();
     }
+    if (!session.can(user, 'addCustomGame')) {
+        return res.status(403).send();
+    }
 
     session.addCustomGame(addCustomGameRequest.customGame);
     await session.save();
@@ -327,6 +339,10 @@ sessionRouter.post('/:id/users/:userId', async (req, res) => {
     if (!session) {
         return res.status(404).send();
     }
+    if (!session.can(user, 'addUser')) {
+        return res.status(403).send();
+    }
+
     const newUser = await User.findById(req.params.userId);
     if (!newUser) {
         return res.status(404).send();
@@ -365,6 +381,9 @@ sessionRouter.post('/:id/chooseGame', async (req, res) => {
     ]);
     if (!session) {
         return res.status(404).send();
+    }
+    if (!session.can(user, 'chooseGame')) {
+        return res.status(403).send();
     }
     const chosenGame = await session.chooseGame();
     eventBus.next(new UpdateSessionEvent(session.id, session.toObject()));

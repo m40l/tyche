@@ -35,6 +35,7 @@
                                 [typeahead]="newGameInput$"
                                 [(ngModel)]="newGameSelected"
                                 (ngModelChange)="onChange()"
+                                appendTo="body"
                             ></ng-select>
                         </li>
                         <li *ngFor="let game of sortedGames.none" class="list-group-item">{{game.name}}</li>

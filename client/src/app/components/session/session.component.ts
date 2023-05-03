@@ -1,5 +1,5 @@
 import { Component, OnDestroy, OnInit } from '@angular/core';
-import { FormControl, Validators } from '@angular/forms';
+import { FormControl, FormGroup, Validators } from '@angular/forms';
 import { ActivatedRoute } from '@angular/router';
 import { catchError, EMPTY, lastValueFrom, map, mergeMap, Observable, Subject, Subscription, tap } from 'rxjs';
 import { SessionEvent } from '../../../../../types/events';
@@ -16,6 +16,7 @@ import SessionService from '../../services/session.service';
 export class SessionComponent implements OnInit, OnDestroy {
     public sessionId!: string;
     public session$!: Observable<Session>;
+    public sessionEnabledSubscriptions$!: Observable<string[]>;
     public sessionEvents$!: Observable<SessionEvent>;
     public allowedCommonGames$!: Observable<Game[]>;
     public addableFriends$!: Observable<User[]>;
@@ -27,6 +28,12 @@ export class SessionComponent implements OnInit, OnDestroy {
     public newSessionUser = new FormControl('', { nonNullable: true });
     public addSessionUserLoading = false;
     public invalidFriendCodesSet = new Set();
+
+    public sessionSettingsForm = new FormGroup({
+        subscriptionsEnabled: new FormGroup({
+            xboxPCGamepass: new FormControl(false, { nonNullable: true }),
+        }),
+    });
 
     private subscriptions: Subscription[] = [];
 
@@ -42,6 +49,7 @@ export class SessionComponent implements OnInit, OnDestroy {
         const { session$, sessionEvents$ } = this.sessionService.getSessionObservables(this.sessionId);
         this.session$ = session$;
         this.allowedCommonGames$ = this.session$.pipe(
+            tap((session) => this.sessionSettingsForm.patchValue(session.settings)),
             map((session) => this.calculateAllowedGommonGames(session.commonGames, session.bannedGames))
         );
         this.addableFriends$ = this.session$.pipe(
@@ -129,5 +137,19 @@ export class SessionComponent implements OnInit, OnDestroy {
                 tap(() => (this.addSessionUserLoading = false))
             )
         );
+    }
+
+    showEditSettingsModal() {
+        $('#editSettingsModal').modal('show');
+    }
+
+    saveAndCloseEditSettingsModal() {
+        this.sessionService
+            .editSessionSettings({
+                sessionId: this.sessionId,
+                ...this.sessionSettingsForm.getRawValue(),
+            })
+            .subscribe();
+        $('#editSettingsModal').modal('hide');
     }
 }

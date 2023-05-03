@@ -11,6 +11,7 @@ import {
     BanGameRequest,
     CreateSessionForm,
     DeleteGameRequest,
+    EditSessionSettings,
     UnbanGameRequest,
 } from '../../types/requests';
 import eventBus from '../events';
@@ -71,6 +72,51 @@ sessionRouter.get('/:id', async (req, res) => {
     }
 
     return res.status(200).send(session.toObject());
+});
+
+sessionRouter.patch('/:id', async (req, res) => {
+    const user = req.user as HydratedDocument<IUser>;
+    const session = await Session.findById(req.params.id).populate<{
+        users: HydratedDocument<
+            MergeType<IUser, { games: MergeType<IOwnedGame, { game: HydratedDocument<IGame> }>[] }>
+        >[];
+        admins: HydratedDocument<IUser>[];
+        commonGames: HydratedDocument<IGame>[];
+        bannedGames: HydratedDocument<IGame>[];
+    }>([
+        {
+            path: 'users',
+            select: '_id username games.game',
+            populate: {
+                path: 'games.game',
+                select: '_id name',
+            },
+        },
+        {
+            path: 'admins',
+            select: '_id username',
+        },
+        {
+            path: 'commonGames',
+            select: '_id name',
+        },
+        {
+            path: 'bannedGames',
+            select: '_id name',
+        },
+    ]);
+    if (!session) {
+        return res.status(404).send();
+    }
+    if (!session.can(user, 'updateSettings')) {
+        return res.status(403).send();
+    }
+    const editSessionSettings = req.body as EditSessionSettings;
+    session.updateSettings(editSessionSettings);
+    await session.save();
+    eventBus.next(new UpdateSessionEvent(session.id, session.toObject()));
+
+    return res.status(200).send();
 });
 
 sessionRouter.post('/', async (req, res) => {

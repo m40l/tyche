@@ -1,4 +1,5 @@
-import { CustomGame, Game } from './models';
+import { SessionSettings } from './models';
+import { CustomGame, Game, Subscriptions } from './models';
 
 export interface DeleteGameRequest {
     sessionId: string;
@@ -36,4 +37,12 @@ export interface LeaveGroupRequest {
 }
 export interface AddOffPlatformGameRequest {
     gameId: string;
+}
+export interface EditUserRequest {
+    username?: string;
+    subscriptions: Subscriptions;
+}
+
+export interface EditSessionSettings extends SessionSettings {
+    sessionId: string;
 }

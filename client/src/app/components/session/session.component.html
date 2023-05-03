@@ -3,6 +3,26 @@
         <div class="col">
             <div class="mh-50">
                 <h3 class="d-flex justify-content-between">
+                    Settings
+                    <span>
+                        <button class="btn btn-primary" (click)="showEditSettingsModal()">Edit Settings</button>
+                    </span>
+                </h3>
+                <div class="card">
+                    <div class="card-body">
+                        Enabled Subscriptions:
+                        <ng-container
+                            *ngFor="let subscription of session.settings.subscriptionsEnabled | keyvalue; last as last"
+                        >
+                            <ng-container *ngIf="subscription.value">
+                                {{subscription.key}}<ng-container *ngIf="!last">, </ng-container>
+                            </ng-container>
+                        </ng-container>
+                    </div>
+                </div>
+            </div>
+            <div class="mh-50">
+                <h3 class="d-flex justify-content-between">
                     Admins
                     <button class="btn btn-outline-primary" (click)="syncGames()">Sync Common Games</button>
                 </h3>
@@ -100,6 +120,9 @@
             </div>
         </div>
     </div>
+    <div class="w-100 p-4">
+        <button class="btn btn-success w-100 p-3" (click)="chooseGame()">Choose Game!</button>
+    </div>
     <div class="modal fade" id="chooseGameNotification">
         <div class="modal-dialog">
             <div class="modal-content">
@@ -115,7 +138,31 @@
             </div>
         </div>
     </div>
-    <div class="w-100 p-4">
-        <button class="btn btn-success w-100 p-3" (click)="chooseGame()">Choose Game!</button>
+    <div class="modal fade" id="editSettingsModal">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Edit Session Settings</h5>
+                </div>
+                <div class="modal-body">
+                    <form [formGroup]="sessionSettingsForm">
+                        <div formGroupName="subscriptionsEnabled">
+                            <div class="form-check">
+                                <input
+                                    type="checkbox"
+                                    formControlName="xboxPCGamepass"
+                                    id="xboxPCGamepass"
+                                    class="form-check-input"
+                                />
+                                <label for="xboxPCGamepass" class="form-check-label">XBOX PC Gamepass</label>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-primary" (click)="saveAndCloseEditSettingsModal()">Save</button>
+                </div>
+            </div>
+        </div>
     </div>
 </ng-container>

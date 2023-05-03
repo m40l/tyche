@@ -1,9 +1,14 @@
+export type Subscriptions = {
+    xboxPCGamepass: boolean;
+};
+
 export interface Game {
     _id: string;
     appId: string;
     name: string;
     iconUrl: string;
     logoUrl: string;
+    includedWith: Subscriptions;
 }
 
 export enum Platform {
@@ -15,6 +20,10 @@ export interface CustomGame {
     name: string;
 }
 export type SessionGame = CustomGame | Game;
+
+export interface SessionSettings {
+    subscriptionsEnabled: Subscriptions;
+}
 
 export interface Session {
     _id: string;
@@ -32,7 +41,10 @@ export interface Session {
         deleteCustomGame: boolean;
         addUser: boolean;
         syncCommonGames: boolean;
+        updateSettings: boolean;
     };
+    everyoneHas: Subscriptions;
+    settings: SessionSettings;
 }
 
 export interface OwnedGame {
@@ -54,6 +66,7 @@ export interface User {
     friendCode: string;
     friends: User[];
     games: OwnedGame[];
+    subscriptions: Subscriptions;
 }
 
 export interface Group {

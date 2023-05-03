@@ -1,4 +1,5 @@
 import { Component } from '@angular/core';
+import { FormControl, FormGroup } from '@angular/forms';
 import {
     catchError,
     concat,
@@ -30,11 +31,16 @@ export class GamesComponent {
     user$: Observable<User>;
     games$: Observable<OwnedGame[]>;
     sortedGames$: Observable<OwnedGamesByCategories>;
+    subscriptions$: Observable<string[]>;
 
     newGameSelected?: string;
     newGameInput$ = new Subject<string>();
     newGamesFiltered$: Observable<Game[]>;
     gamesLoading = false;
+
+    editSubscriptionsForm = new FormGroup({
+        xboxPCGamepass: new FormControl(false, { nonNullable: true }),
+    });
 
     constructor(
         private gameService: GameService,
@@ -42,6 +48,14 @@ export class GamesComponent {
         private currentUserService: CurrentUserService
     ) {
         this.user$ = this.currentUserService.currentUserObservable();
+        this.subscriptions$ = this.user$.pipe(
+            tap((user) => this.editSubscriptionsForm.patchValue(user.subscriptions)),
+            map((user) =>
+                Object.keys(user.subscriptions).filter(
+                    (subscription) => user.subscriptions[subscription as keyof typeof user.subscriptions]
+                )
+            )
+        );
         this.games$ = this.gamesService.gamesObservable();
         this.sortedGames$ = this.games$.pipe(
             map((games) =>
@@ -89,5 +103,18 @@ export class GamesComponent {
 
     syncFromSteam() {
         this.gameService.syncFromSteam().subscribe(() => this.gamesService.refreshGames());
+    }
+
+    showEditSubscriptionsModal() {
+        $('#editSubscriptions').modal('show');
+    }
+
+    saveAndCloseEditSubscriptionsModal() {
+        this.currentUserService
+            .editCurrentUser({ subscriptions: this.editSubscriptionsForm.getRawValue() })
+            .subscribe(() => {
+                $('#editSubscriptions').modal('hide');
+                this.currentUserService.refreshCurrentUser();
+            });
     }
 }

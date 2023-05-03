@@ -7,6 +7,7 @@ import {
     BanGameRequest,
     CreateSessionForm,
     DeleteGameRequest,
+    EditSessionSettings,
     UnbanGameRequest,
 } from '../../../../types/requests';
 import { Session } from '../../../../types/models';
@@ -72,5 +73,9 @@ export default class SessionService {
 
     addSessionUser(request: AddSessionUserRequest) {
         return this.httpClient.post(`/api/sessions/${request.sessionId}/users/${request.userId}`, request);
+    }
+
+    editSessionSettings(request: EditSessionSettings) {
+        return this.httpClient.patch(`/api/sessions/${request.sessionId}`, request);
     }
 }

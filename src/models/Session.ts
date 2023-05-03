@@ -1,8 +1,9 @@
 import _ from 'lodash';
 import { HydratedDocument, MergeType, model, PopulateOptions, Schema, Types } from 'mongoose';
-import { CustomGame, Session, SessionGame } from '../../types/models';
+import { session } from 'passport';
+import { CustomGame, Session, SessionGame, SessionSettings } from '../../types/models';
 import { IGame } from './Game';
-import { IOwnedGame, IUser } from './User';
+import User, { IOwnedGame, IUser } from './User';
 
 export interface ISession
     extends MergeType<
@@ -22,7 +23,21 @@ export interface ISession
     addCustomGame(game: CustomGame): void;
     deleteCustomGame(game: CustomGame): void;
     addUser(user: HydratedDocument<IUser>): void;
-    can(user: HydratedDocument<IUser>, action: string): boolean;
+    updateSettings(updateSettings: SessionSettings): void;
+    can(
+        user: HydratedDocument<IUser>,
+        action:
+            | 'getSession'
+            | 'getSessionGames'
+            | 'chooseGame'
+            | 'banGame'
+            | 'unbanGame'
+            | 'addCustomGame'
+            | 'deleteCustomGame'
+            | 'addUser'
+            | 'syncCommonGames'
+            | 'updateSettings'
+    ): boolean;
     syncCommonGames(): void;
 }
 
@@ -62,6 +77,7 @@ export default model<ISession>(
                 {
                     type: Schema.Types.ObjectId,
                     ref: 'Game',
+                    required: true,
                 },
             ],
             chosenGame: {
@@ -71,13 +87,23 @@ export default model<ISession>(
                 },
             },
             allowUsers: {
-                chooseGame: { type: Boolean, default: true },
-                banGame: { type: Boolean, default: true },
-                unbanGame: { type: Boolean, default: true },
-                addCustomGame: { type: Boolean, default: true },
-                deleteCustomGame: { type: Boolean, default: true },
-                addUser: { type: Boolean, default: true },
-                syncCommonGames: { type: Boolean, default: true },
+                chooseGame: { type: Boolean, default: true, required: true },
+                banGame: { type: Boolean, default: true, required: true },
+                unbanGame: { type: Boolean, default: true, required: true },
+                addCustomGame: { type: Boolean, default: true, required: true },
+                deleteCustomGame: { type: Boolean, default: true, required: true },
+                addUser: { type: Boolean, default: true, required: true },
+                syncCommonGames: { type: Boolean, default: true, required: true },
+                updateSettings: { type: Boolean, default: false, required: true },
+            },
+            settings: {
+                subscriptionsEnabled: {
+                    xboxPCGamepass: {
+                        type: Boolean,
+                        default: false,
+                        required: true,
+                    },
+                },
             },
         },
         {
@@ -110,6 +136,8 @@ export default model<ISession>(
                             return this.allowUsers.addUser ? isSessionUser : isSessionAdmin;
                         case 'syncCommonGames':
                             return this.allowUsers.syncCommonGames ? isSessionUser : isSessionAdmin;
+                        case 'updateSettings':
+                            return this.allowUsers.updateSettings ? isSessionUser : isSessionAdmin;
                         default:
                             return false;
                     }
@@ -198,6 +226,9 @@ export default model<ISession>(
                 ) {
                     const usersGames = this.users.map((user) => _.map(user.games, 'game'));
                     this.commonGames = _.intersectionWith(...usersGames, (a: IGame, b: IGame) => a._id.equals(b._id));
+                },
+                async updateSettings(settings: SessionSettings) {
+                    this.settings = settings;
                 },
             },
             toJSON: { virtuals: true },

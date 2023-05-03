@@ -2,6 +2,7 @@ import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { merge, Observable, repeat, shareReplay, skipUntil, Subject, timer } from 'rxjs';
 import { User } from '../../../../types/models';
+import { EditUserRequest } from '../../../../types/requests';
 
 @Injectable({
     providedIn: 'root',
@@ -35,5 +36,9 @@ export default class CurrentUserService {
     currentUserObservable(): Observable<User> {
         this.lazyRefreshCurrentUser();
         return this.currentUserObservable$;
+    }
+
+    editCurrentUser(editUserRequest: EditUserRequest) {
+        return this.httpClient.patch(`/api/users/current`, editUserRequest);
     }
 }

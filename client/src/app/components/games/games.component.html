@@ -2,6 +2,26 @@
     <ng-container *ngIf="sortedGames$ | async as sortedGames">
         <div class="row overflow-scroll pb-3">
             <div class="col">
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h3 class="card-title d-flex justify-content-between">
+                            Game Subscriptions
+                            <button type="button" class="btn btn-primary" (click)="showEditSubscriptionsModal()">
+                                Edit Subscriptions
+                            </button>
+                        </h3>
+                    </div>
+                    <div class="card-body">
+                        <strong>Subscriptions: </strong>
+                        <span *ngIf="subscriptions$ | async as subscriptions">
+                            <span *ngIf="subscriptions.length > 0; else noSubscriptions">
+                                {{subscriptions.join(', ')}}
+                            </span>
+                            <ng-template #noSubscriptions>None</ng-template>
+                        </span>
+                    </div>
+                </div>
+
                 <div class="card" *ngIf="user.steamUser?.id">
                     <div class="card-header">
                         <h3 class="card-title d-flex justify-content-between">
@@ -40,6 +60,32 @@
                         </li>
                         <li *ngFor="let game of sortedGames.none" class="list-group-item">{{game.name}}</li>
                     </ul>
+                </div>
+            </div>
+        </div>
+        <div class="modal fade" id="editSubscriptions">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">Your Subscriptions</h5>
+                    </div>
+                    <div class="modal-body">
+                        <form [formGroup]="editSubscriptionsForm">
+                            <div class="form-check">
+                                <input
+                                    type="checkbox"
+                                    formControlName="xboxPCGamepass"
+                                    id="xboxPCGamepass"
+                                    class="form-check-input"
+                                />
+                                <label for="xboxPCGamepass" class="form-check-label">XBOX PC Gamepass</label>
+                            </div>
+                        </form>
+                    </div>
+
+                    <div class="modal-footer">
+                        <button class="btn btn-secondary" (click)="saveAndCloseEditSubscriptionsModal()">Save</button>
+                    </div>
                 </div>
             </div>
         </div>

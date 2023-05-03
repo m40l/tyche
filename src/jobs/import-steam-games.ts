@@ -1,5 +1,5 @@
-import Game from './models/Game';
-import SteamClient from './clients/steam-client';
+import Game from '../models/Game';
+import SteamClient from '../clients/steam-client';
 
 export default async function importSteamGames() {
     const steam = new SteamClient();

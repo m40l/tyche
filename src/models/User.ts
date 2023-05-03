@@ -77,6 +77,13 @@ let UserSchema = new Schema<IUser>(
                 },
             },
         ],
+        subscriptions: {
+            xboxPCGamepass: {
+                type: Boolean,
+                required: true,
+                default: false,
+            },
+        },
     },
     {
         methods: {

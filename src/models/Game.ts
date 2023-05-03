@@ -22,5 +22,12 @@ export default model<IGame>(
         logoUrl: {
             type: String,
         },
+        includedWith: {
+            xboxPCGamepass: {
+                type: Boolean,
+                required: true,
+                default: false,
+            },
+        },
     })
 );

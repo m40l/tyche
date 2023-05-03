@@ -11,7 +11,6 @@ import apiRouter from './api/api.routes';
 import authRouter, { generateGoogleStrategy, generateSteamStrategy } from './api/auth.routes';
 
 import User from './models/User';
-import importSteamGames from './import-steam-games';
 import assert from 'assert';
 import eventsRouter from './api/events.routes';
 
@@ -71,8 +70,6 @@ async function main() {
             realm: `${SERVER_URL}`,
         })
     );
-
-    // importSteamGames();
 
     app.use('/auth', authRouter);
     app.use('/api', apiRouter);
